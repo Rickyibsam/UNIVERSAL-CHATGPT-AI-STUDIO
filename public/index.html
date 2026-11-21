@@ -27,8 +27,7 @@
 <div class="field full"><label for="storySetting">WORLD / LOCATION (OPTIONAL)</label><input id="storySetting" placeholder="e.g. a floating city above a glowing ocean"></div>
 <div class="field full"><label for="storyNotes">MUST INCLUDE / AVOID (OPTIONAL)</label><textarea id="storyNotes" placeholder="Add required events, facts, character relationships, words to avoid, or safety notes."></textarea></div>
 </div>
-<div class="fieldgrid"><div class="field"><label for="ollamaModel">LOCAL AI MODEL (OLLAMA)</label><input id="ollamaModel" value="qwen2.5:3b" placeholder="e.g. qwen2.5:3b"></div><div class="field"><label for="ollamaStoryEndpoint">OLLAMA ENDPOINT</label><input id="ollamaStoryEndpoint" value="http://127.0.0.1:11434" placeholder="http://127.0.0.1:11434"></div></div>
-<div class="actions"><button class="btn" id="realAiStoryBtn">Generate with my local AI model</button><span class="hint">Requires Ollama + a downloaded model on your own computer. No hosted AI bill.</span></div>
+<div class="actions"><button class="btn" id="realAiStoryBtn">✦ Generate screenplay with Cloud AI</button><span class="hint">Secure cloud generation · no laptop model required.</span></div>
 <div class="actions"><button class="btn" id="writeScreenplayBtn">✦ Generate full screenplay draft</button><button class="btn secondary" id="qualityCheckBtn">Run story quality check</button></div>
 <div id="storyOutput" class="empty" aria-live="polite">Your screenplay draft will appear here after generation.</div>
 </section><section class="panel" id="characterStudio"><h2>Character studio</h2><p class="desc">Create recurring characters and save their visual and voice continuity notes with each production.</p><div class="fieldgrid"><div class="field"><label for="characterName">CHARACTER NAME</label><input id="characterName" placeholder="e.g. Milo the little robot"></div><div class="field"><label for="characterVoice">VOICE PROFILE</label><input id="characterVoice" placeholder="e.g. cheerful, gentle, youthful"></div><div class="field full"><label for="characterDescription">APPEARANCE & PERSONALITY</label><textarea id="characterDescription" placeholder="Describe face, body, colors, clothing, age/style, personality and distinctive features."></textarea></div><div class="field full"><label for="characterContinuity">CONTINUITY RULES</label><input id="characterContinuity" placeholder="Same blue jacket, round eyes, height and voice in every scene"></div></div><div class="actions"><button class="btn secondary" id="addCharacterBtn">Add character</button></div><div id="characterList" class="empty">No characters added yet.</div></section>
@@ -41,7 +40,7 @@
 </section>
 <section class="panel" id="timelineStudio">
 <h2>Timeline editor & subtitles</h2><p class="desc">Arrange scene timing, add audio/video/image tracks, and export an editable timeline manifest and subtitle file. Final MP4 rendering requires generated media assets and a rendering engine.</p>
-<div class="actions"><button class="btn" id="createTimelineBtn">Create / refresh timeline from scenes</button><button class="btn secondary" id="saveTimelineBtn">Save timeline edits</button><button class="btn secondary" id="exportTimelineBtn">Export timeline manifest</button><button class="btn" id="downloadRenderKitBtn">Download local MP4 render kit</button><button class="btn secondary" id="exportSubsBtn">Export subtitles (.vtt)</button></div>
+<div class="actions"><button class="btn" id="createTimelineBtn">Create / refresh timeline from scenes</button><button class="btn secondary" id="saveTimelineBtn">Save timeline edits</button><button class="btn secondary" id="exportTimelineBtn">Export timeline manifest</button><button class="btn" id="downloadRenderKitBtn" disabled>Download local MP4 render kit</button><button class="btn secondary" id="exportSubsBtn">Export subtitles (.vtt)</button></div>
 <div class="field"><label for="renderResolution">RENDER RESOLUTION</label><select id="renderResolution"><option value="1080">1080p</option><option value="2160">4K UHD</option><option value="720">720p</option></select></div><div id="timelineStatus" class="hint">Generate a screenplay and save it as a cloud project to create a persistent timeline.</div><div id="timelineItems" class="empty">Timeline not created.</div>
 </section>
 <section class="panel" id="recoveryStudio">
@@ -59,16 +58,7 @@
 <div class="fieldgrid" style="margin-top:14px"><div class="field"><label for="audioPreset">GENERATED AUDIO TYPE</label><select id="audioPreset"><option value="cinematic">Cinematic background music</option><option value="ambient">Soft ambient music</option><option value="suspense">Suspense pulse</option><option value="whoosh">Whoosh transition SFX</option><option value="impact">Soft impact SFX</option><option value="sparkle">Magic sparkle SFX</option><option value="rain">Rain ambience SFX</option></select></div><div class="field"><label for="audioLength">DURATION (SECONDS)</label><select id="audioLength"><option value="10">10 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option></select></div></div>
 <div class="actions"><button class="btn" id="generateAudioBtn">Generate WAV audio</button></div>
 <div id="audioStudioStatus" class="hint">Generated audio is procedural/original, not a neural AI music model. Save the downloaded WAV in your project media library using the upload control.</div>
-</section><section class="panel" id="providerStudio">
-<h2>AI provider connections</h2><p class="desc">Optional image workflow only. Your i5 laptop has no confirmed dedicated GPU; ComfyUI image generation may be very slow or run out of memory. AI video and lip-sync are intentionally disabled for this build.</p>
-<div class="field"><label for="referenceAsset">REFERENCE IMAGE FOR CHARACTER / WORLD CONTINUITY</label><select id="referenceAsset"><option value="">No reference image selected</option></select><p class="hint">In a custom ComfyUI API workflow, use a LoadImage node with image value {{REFERENCE_IMAGE}} and connect it to a reference/IP-Adapter/ControlNet path supported by your model.</p></div><div class="fieldgrid"><div class="field"><label for="comfyEndpoint">LOCAL COMFYUI URL</label><input id="comfyEndpoint" value="http://127.0.0.1:8188" placeholder="http://127.0.0.1:8188"></div><div class="field"><label for="ollamaEndpoint">LOCAL OLLAMA URL (OPTIONAL)</label><input id="ollamaEndpoint" placeholder="http://127.0.0.1:11434"></div></div>
-<div class="field full"><label for="comfyWorkflow">COMFYUI API WORKFLOW JSON (USE {{PROMPT}} AS PROMPT PLACEHOLDER)</label><textarea id="comfyWorkflow" placeholder='Paste a ComfyUI API-format workflow JSON here. It must contain an output node and a text node with {{PROMPT}}.'></textarea></div>
-<div class="fieldgrid"><div class="field"><label for="generationType">GENERATION TYPE</label><select id="generationType"><option value="image">Image</option></select></div><div class="field"><label for="generationPrompt">SHOT / AUDIO PROMPT</label><input id="generationPrompt" placeholder="Describe this shot or audio asset"></div></div>
-<div class="actions"><button class="btn" id="runComfyJobBtn">Run local ComfyUI workflow</button><button class="btn secondary" id="checkComfyQueueBtn">Check ComfyUI queue</button></div>
-<div class="actions"><button class="btn secondary" id="saveProviderSettingsBtn">Save local endpoints</button><button class="btn secondary" id="testComfyBtn">Test ComfyUI connection</button><button class="btn secondary" id="testOllamaBtn">Test Ollama connection</button></div>
-<div id="providerStatus" class="hint">No local provider configured. No paid provider is connected or called.</div>
-<div class="hint">Provider endpoints are stored only in this browser. For a public multi-user product, connect providers through a secure backend and server-side secrets; never paste API secrets into this page.</div>
-</section><section class="panel"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">System voice preview · available</span><span class="pill">Procedural music & SFX · WAV</span><span class="pill">Local FFmpeg render kit · available</span><span class="pill">Automated media QC · pending</span></div></section>
+</section><section class="panel" id="providerStudio"><h2>Cloud AI provider centre</h2><p class="desc">Your browser is the control panel. Generation runs on cloud AI infrastructure.</p><div class="pillrow"><span class="pill">Cloud screenplay · gateway deployed</span><span class="pill">Cloud image · pending</span><span class="pill">Cloud video · pending</span><span class="pill">Cloud voice · pending</span><span class="pill">Cloud music/SFX · pending</span><span class="pill">Lip-sync · omitted</span></div><div class="scene"><div class="sceneNo">1</div><div><h3>Text / screenplay</h3><p>Gemini 2.5 Flash-Lite free-tier adapter; server-side key setup required.</p></div></div><div class="scene"><div class="sceneNo">2</div><div><h3>Image and video</h3><p>Cloud provider adapters and reference continuity are next. Paid services remain disabled until approved.</p></div></div><div id="providerStatus" class="hint">No paid provider is enabled.</div></section><section class="panel"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">System voice preview · available</span><span class="pill">Procedural music & SFX · WAV</span><span class="pill">Local FFmpeg render kit · available</span><span class="pill">Automated media QC · pending</span></div></section>
 </main></div><footer class="foot"><span>UNIVERSAL-CHATGPT-AI-STUDIO · Independent project</span><span>Free-first development · Paid providers require your approval · <a href="https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO/blob/main/docs/LOCAL_AI_SETUP.md" target="_blank" rel="noopener">Local AI setup guide</a></span></footer></div>
 <script>
 const $=id=>document.getElementById(id);let currentPlan=null;const characterDrafts=[];function renderCharacters(){$('characterList').innerHTML=characterDrafts.length?characterDrafts.map((x,i)=>'<div class="scene"><div class="sceneNo">C'+(i+1)+'</div><div><h3>'+escapeHtml(x.name)+'</h3><p>'+escapeHtml(x.description)+'</p><p class="hint">Voice: '+escapeHtml(x.voice_profile.style||'Not specified')+' · '+escapeHtml(x.continuity_notes||'No continuity notes')+'</p><button class="btn secondary remove-character" data-index="'+i+'">Remove</button></div></div>').join(''):'No characters added yet.';$('characterList').querySelectorAll('.remove-character').forEach(b=>b.addEventListener('click',()=>{characterDrafts.splice(Number(b.dataset.index),1);renderCharacters();}));} $('addCharacterBtn').addEventListener('click',()=>{const name=$('characterName').value.trim(),description=$('characterDescription').value.trim();if(!name||!description){setAuthStatus('Enter a character name and appearance description.');return;}characterDrafts.push({name,description,voice_profile:{style:$('characterVoice').value.trim()},continuity_notes:$('characterContinuity').value.trim()});$('characterName').value='';$('characterDescription').value='';$('characterVoice').value='';$('characterContinuity').value='';renderCharacters();});
@@ -304,154 +294,26 @@ async function loadVersions(){
  }));
 }
 $('loadVersionsBtn').addEventListener('click',loadVersions);
-$('saveProviderSettingsBtn').addEventListener('click',()=>{localStorage.setItem('ucas-provider-settings',JSON.stringify({comfy:$('comfyEndpoint').value.trim(),ollama:$('ollamaEndpoint').value.trim(),workflow:$('comfyWorkflow').value,model:$('ollamaModel').value}));$('ollamaStoryEndpoint').value=$('ollamaEndpoint').value.trim();$('providerStatus').textContent='Local endpoints saved in this browser only. No external generation request was made.';});
-(function restoreProviderSettings(){try{const s=JSON.parse(localStorage.getItem('ucas-provider-settings')||'{}');$('comfyEndpoint').value=s.comfy||'http://127.0.0.1:8188';$('ollamaEndpoint').value=s.ollama||'http://127.0.0.1:11434';$('ollamaStoryEndpoint').value=s.ollama||'http://127.0.0.1:11434';$('comfyWorkflow').value=s.workflow||'';$('ollamaModel').value=s.model||'qwen2.5:3b';}catch(e){} })();
-async function testEndpoint(url,path,label){
- if(!url){$('providerStatus').textContent='Enter '+label+' URL first.';return;}
- try{const res=await fetch(url.replace(/\/$/,'')+path,{method:'GET'});if(!res.ok)throw new Error('HTTP '+res.status);const data=await res.json();$('providerStatus').textContent=label+' connected. Response received; generation workflows still need model-specific setup.';}
- catch(e){$('providerStatus').textContent=label+' connection failed: '+e.message+'. Check that the local service is running and allows this website origin (CORS).';}
-}
-$('testComfyBtn').addEventListener('click',()=>testEndpoint($('comfyEndpoint').value,'/system_stats','ComfyUI'));
-$('testOllamaBtn').addEventListener('click',()=>testEndpoint($('ollamaEndpoint').value,'/api/tags','Ollama'));
-
-
-/* Default ComfyUI API graph: basic SD/SDXL-style text-to-image. Select a checkpoint installed in your local ComfyUI. */
-const DEFAULT_COMFY_IMAGE_WORKFLOW={
- "3":{class_type:"KSampler",inputs:{seed:"{{SEED}}",steps:20,cfg:7,sampler_name:"euler",scheduler:"normal",denoise:1,model:["4",0],positive:["6",0],negative:["7",0],latent_image:["5",0]}},
- "4":{class_type:"CheckpointLoaderSimple",inputs:{ckpt_name:"YOUR_CHECKPOINT.safetensors"}},
- "5":{class_type:"EmptyLatentImage",inputs:{width:"{{WIDTH}}",height:"{{HEIGHT}}",batch_size:1}},
- "6":{class_type:"CLIPTextEncode",inputs:{text:"{{PROMPT}}",clip:["4",1]}},
- "7":{class_type:"CLIPTextEncode",inputs:{text:"{{NEGATIVE_PROMPT}}",clip:["4",1]}},
- "8":{class_type:"VAEDecode",inputs:{samples:["3",0],vae:["4",2]}},
- "9":{class_type:"SaveImage",inputs:{filename_prefix:"UniversalStudio",images:["8",0]}}
-};
-if(!$('comfyWorkflow').value.trim())$('comfyWorkflow').value=JSON.stringify(DEFAULT_COMFY_IMAGE_WORKFLOW,null,2);
-/* Optional local AI integrations. Nothing is sent to a hosted paid provider. */
-const originalRestoreProvider=(function(){try{return JSON.parse(localStorage.getItem('ucas-provider-settings')||'{}')}catch(e){return {}}})();
-$('ollamaStoryEndpoint').value=originalRestoreProvider.ollama||'http://127.0.0.1:11434';
 $('realAiStoryBtn').addEventListener('click',async()=>{
- const endpoint=$('ollamaStoryEndpoint').value.trim().replace(/\/$/,'');const model=$('ollamaModel').value.trim();const prompt=$('prompt').value.trim();
- if(!endpoint||!model||!prompt){$('storyOutput').textContent='Enter the story prompt, local Ollama URL and model name.';return;}
- $('storyOutput').textContent='Local AI is writing your screenplay. This may take several minutes…';
- const system='You are a professional film screenwriter and production designer. Return ONLY valid JSON with keys title, logline, characters, scenes. characters is an array of objects with name, description, voice, continuity. scenes is an array of objects with title, visual_prompt, camera, dialogue, narration, music, sfx, duration_seconds. Produce 3 to 16 coherent scenes appropriate to the requested duration. Maintain consistent character identity and locations. Avoid unsafe child-directed content. Include dialogue in the requested language. No markdown fences.';
- const userPrompt='Write a complete screenplay from this brief. Genre: '+$('storyGenre').value+'. Audience: '+$('storyAudience').value+'. Tone: '+$('storyTone').value+'. Ending: '+$('storyEnding').value+'. Setting: '+$('storySetting').value+'. Language: '+$('language').value+'. Style: '+$('style').value+'. Duration: '+$('duration').value+'. Required/avoid: '+$('storyNotes').value+'. Prompt: '+prompt;
+ const prompt=$('prompt').value.trim();if(!prompt){$('storyOutput').textContent='Enter your video idea first.';return;}
+ const {data:{session}}=await sb.auth.getSession();if(!session){$('storyOutput').textContent='Sign in first to use Cloud AI.';return;}
+ if(!currentPlan?.project_id){$('storyOutput').textContent='Save this production to your cloud projects first, then generate the screenplay.';return;}
+ $('storyOutput').textContent='Generating screenplay on the secure cloud AI service…';
  try{
-  const res=await fetch(endpoint+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:userPrompt}],stream:false,format:'json'})});
-  if(!res.ok)throw new Error('Ollama returned HTTP '+res.status);
-  const payload=await res.json();const data=JSON.parse(payload.message?.content||'{}');
-  if(!Array.isArray(data.scenes)||!data.scenes.length)throw new Error('Model response did not contain a scenes array.');
-  const duration=({'30 seconds':30,'60 seconds':60,'3 minutes':180,'5 minutes':300,'10 minutes':600,'20 minutes':1200})[$('duration').value]||60;
-  const characters=(data.characters||[]).map(x=>({name:x.name||'Character',description:x.description||'',voice_profile:{style:x.voice||''},continuity_notes:x.continuity||''}));
-  characterDrafts.splice(0,characterDrafts.length,...characters);renderCharacters();
-  currentPlan={title:data.title||prompt.slice(0,70),prompt,project_id:currentPlan?.project_id,format:$('format').value,style:$('style').value,duration:$('duration').value,duration_seconds:duration,language:$('language').value,voice:$('voice').value,quality:$('quality').value,genre:$('storyGenre').value,audience:$('storyAudience').value,tone:$('storyTone').value,ending:$('storyEnding').value,setting:$('storySetting').value,notes:$('storyNotes').value,characters,scenes:data.scenes.map(s=>({title:s.title||'Scene',description:'VISUAL: '+(s.visual_prompt||'')+' CAMERA: '+(s.camera||'')+' DIALOGUE: '+(s.dialogue||'')+' NARRATION: '+(s.narration||'')+' MUSIC: '+(s.music||'')+' SFX: '+(s.sfx||'')+' SUBTITLES: '+$('language').value,duration_seconds:Number(s.duration_seconds)||Math.max(1,Math.round(duration/data.scenes.length)),camera_direction:s.camera||'Cinematic'}))};
-  $('summary').textContent='Local AI screenplay · '+currentPlan.scenes.length+' scenes · '+currentPlan.title;
-  $('meta').innerHTML=[currentPlan.format,currentPlan.style,currentPlan.language,'Ollama: '+model].map(x=>'<span class="pill">'+escapeHtml(x)+'</span>').join('');
-  $('scenes').innerHTML=currentPlan.scenes.map((s,i)=>'<article class="scene"><div class="sceneNo">0'+(i+1)+'</div><div><h3>'+escapeHtml(s.title)+'</h3><textarea class="scene-edit" data-scene-index="'+i+'">'+escapeHtml(s.description)+'</textarea><p class="hint">Duration: '+s.duration_seconds+' sec</p></div></article>').join('');
-  $('scenes').oninput=e=>{if(e.target.matches('.scene-edit'))currentPlan.scenes[Number(e.target.dataset.sceneIndex)].description=e.target.value;};
-  $('result').style.display='block';$('storyOutput').textContent='Real screenplay generated by local model '+model+'. Review and edit the scenes before saving.';$('result').scrollIntoView({behavior:'smooth'});
- }catch(e){$('storyOutput').textContent='Local AI generation failed: '+e.message+'. Check Ollama is running, model is installed, and CORS allows this website origin.';}
+ const res=await fetch(SUPABASE_URL+'/functions/v1/studio-gateway',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'generate-script',project_id:currentPlan.project_id,prompt,settings:{genre:$('storyGenre').value,audience:$('storyAudience').value,tone:$('storyTone').value,ending:$('storyEnding').value,setting:$('storySetting').value,language:$('language').value,style:$('style').value,duration:$('duration').value,notes:$('storyNotes').value}})});
+ const payload=await res.json();if(!res.ok)throw new Error(payload.message||payload.error||payload.status||'Cloud generation failed');
+ const d=payload.result;if(!d||!Array.isArray(d.scenes))throw new Error('Invalid screenplay response');
+ const seconds=({'30 seconds':30,'60 seconds':60,'3 minutes':180,'5 minutes':300,'10 minutes':600,'20 minutes':1200})[$('duration').value]||60;
+ const characters=(d.characters||[]).map(x=>({name:x.name||'Character',description:x.description||'',voice_profile:{style:x.voice||''},continuity_notes:x.continuity||''}));
+ characterDrafts.splice(0,characterDrafts.length,...characters);renderCharacters();
+ currentPlan={...currentPlan,title:d.title||prompt.slice(0,70),prompt,format:$('format').value,style:$('style').value,duration:$('duration').value,duration_seconds:seconds,language:$('language').value,genre:$('storyGenre').value,audience:$('storyAudience').value,tone:$('storyTone').value,ending:$('storyEnding').value,setting:$('storySetting').value,notes:$('storyNotes').value,characters,scenes:d.scenes.map(s=>({title:s.title||'Scene',description:'VISUAL: '+s.visual_prompt+' CAMERA: '+s.camera+' DIALOGUE: '+s.dialogue+' NARRATION: '+s.narration+' MUSIC: '+s.music+' SFX: '+s.sfx+' SUBTITLES: '+$('language').value,duration_seconds:Number(s.duration_seconds)||Math.max(1,Math.round(seconds/d.scenes.length)),camera_direction:s.camera||'Cinematic'}))};
+ $('summary').textContent='Cloud AI screenplay · '+currentPlan.scenes.length+' scenes · '+currentPlan.title;
+ $('meta').innerHTML=[currentPlan.format,currentPlan.style,currentPlan.language,'Gemini Flash-Lite · Cloud'].map(x=>'<span class="pill">'+escapeHtml(x)+'</span>').join('');
+ $('scenes').innerHTML=currentPlan.scenes.map((s,i)=>'<article class="scene"><div class="sceneNo">0'+(i+1)+'</div><div><h3>'+escapeHtml(s.title)+'</h3><textarea class="scene-edit" data-scene-index="'+i+'">'+escapeHtml(s.description)+'</textarea><p class="hint">Duration: '+s.duration_seconds+' sec</p></div></article>').join('');
+ $('scenes').oninput=e=>{if(e.target.matches('.scene-edit'))currentPlan.scenes[Number(e.target.dataset.sceneIndex)].description=e.target.value;};
+ $('result').style.display='block';$('storyOutput').textContent='Cloud screenplay generated. Job '+payload.job_id+'. Review and Save to Cloud.';$('result').scrollIntoView({behavior:'smooth'});
+ }catch(e){$('storyOutput').textContent='Cloud AI error: '+e.message+'. Configure GEMINI_API_KEY in Supabase Edge Function Secrets; no paid provider is called.';}
 });
-async function runComfyWorkflow(){
- const base=$('comfyEndpoint').value.trim().replace(/\/$/,'');const raw=$('comfyWorkflow').value.trim();const basePrompt=$('generationPrompt').value.trim()||(currentPlan?.scenes?.[0]?.description||$('prompt').value.trim());const continuity=(currentPlan?.characters||[]).map(ch=>'CHARACTER '+ch.name+': '+ch.description+' CONTINUITY: '+(ch.continuity_notes||'')).join('\n');const prompt=[basePrompt,currentPlan?.setting?'WORLD CONTINUITY: '+currentPlan.setting:'',continuity].filter(Boolean).join('\n\n');
- if(!base||!raw||!prompt){$('providerStatus').textContent='Enter ComfyUI URL, API workflow JSON and a prompt.';return;}
- let workflow;try{workflow=JSON.parse(raw)}catch(e){$('providerStatus').textContent='Workflow JSON is invalid: '+e.message;return;}if(raw.includes('YOUR_CHECKPOINT.safetensors')){$('providerStatus').textContent='Select the exact checkpoint filename installed in your local ComfyUI, then save the workflow. Only image generation is enabled here. Video generation and lip-sync are intentionally excluded.';return;}
- const seed=Math.floor(Math.random()*2147483647),duration=Number(currentPlan?.duration_seconds||60);const baseSize=512,ratio=currentPlan?.format==='9:16'?9/16:currentPlan?.format==='4:3'?4/3:currentPlan?.format==='1:1'?1:16/9;const width=Math.max(512,Math.round((ratio>=1?baseSize:baseSize*ratio)/64)*64),height=Math.max(512,Math.round((ratio<=1?baseSize:baseSize/ratio)/64)*64);
- let referenceImagePath='';if(raw.includes('{{REFERENCE_IMAGE}}')){const refId=$('referenceAsset').value;if(!refId){$('providerStatus').textContent='Select a reference image or remove the {{REFERENCE_IMAGE}} placeholder from the workflow.';return;}const refAsset=(await sb.from('assets').select('*').eq('id',refId).single());if(refAsset.error){$('providerStatus').textContent='Could not load reference image: '+refAsset.error.message;return;}const signed=await sb.storage.from('studio-media').createSignedUrl(refAsset.data.storage_key,300);if(signed.error){$('providerStatus').textContent='Could not access reference image: '+signed.error.message;return;}const refBlob=await (await fetch(signed.data.signedUrl)).blob();const form=new FormData();form.append('image',refBlob,refAsset.data.storage_key.split('/').pop());form.append('overwrite','true');form.append('type','input');const upload=await fetch(base+'/upload/image',{method:'POST',body:form});const uploadData=await upload.json();if(!upload.ok||!uploadData.name)throw new Error('ComfyUI reference image upload failed: '+(uploadData.error||upload.status));referenceImagePath=(uploadData.subfolder?uploadData.subfolder+'/':'')+uploadData.name;}
- function replacePlaceholders(obj){if(obj==='{{REFERENCE_IMAGE}}')return referenceImagePath;if(obj==='{{SEED}}')return seed;if(obj==='{{DURATION}}')return duration;if(obj==='{{WIDTH}}')return width;if(obj==='{{HEIGHT}}')return height;if(Array.isArray(obj))return obj.map(replacePlaceholders);if(obj&&typeof obj==='object'){for(const k of Object.keys(obj))obj[k]=replacePlaceholders(obj[k]);return obj;}if(typeof obj==='string')return obj.replaceAll('{{PROMPT}}',prompt).replaceAll('{{NEGATIVE_PROMPT}}','').replaceAll('{{SEED}}',String(seed)).replaceAll('{{DURATION}}',String(duration));return obj;}
- workflow=replacePlaceholders(workflow);
- $('providerStatus').textContent='Submitting '+$('generationType').value+' workflow to local ComfyUI…';
- try{
-  const res=await fetch(base+'/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow})});
-  const body=await res.json();if(!res.ok||body.error)throw new Error(body.error?.message||body.error||'HTTP '+res.status);
-  const id=body.prompt_id;if(!id)throw new Error('ComfyUI did not return a prompt_id.');
-  $('providerStatus').textContent='Job queued: '+id+'. Waiting for local render…';
-  await pollComfyJob(base,id,$('generationType').value,prompt);
- }catch(e){$('providerStatus').textContent='ComfyUI request failed: '+e.message+'. Ensure local ComfyUI is running, API workflow format is correct, and CORS permits this origin.';}
-}
-async function pollComfyJob(base,id,type,prompt){
- for(let attempt=0;attempt<180;attempt++){
-  await new Promise(resolve=>setTimeout(resolve,2000));
-  const res=await fetch(base+'/history/'+encodeURIComponent(id));if(!res.ok)continue;
-  const history=await res.json(),entry=history[id];if(!entry)continue;
-  if(entry.status?.status_str==='error'||entry.status?.status_str==='failed')throw new Error('ComfyUI generation failed. Inspect local ComfyUI console.');
-  if(entry.outputs){
-   const files=[];
-   for(const [nodeId,out] of Object.entries(entry.outputs)){for(const kind of ['images','videos','gifs','audio'])for(const item of (out[kind]||[]))files.push({...item,kind,nodeId});}
-   if(!files.length){$('providerStatus').textContent='ComfyUI finished but returned no recognized image/video/audio output. Check workflow output nodes.';return;}
-   if(!requireCloudProject()){$('providerStatus').textContent='ComfyUI finished. Save a cloud project to store its generated files.';return;}
-   for(const file of files){
-    const query=new URLSearchParams({filename:file.filename,subfolder:file.subfolder||'',type:file.type||'output'});
-    const fileRes=await fetch(base+'/view?'+query.toString());if(!fileRes.ok)throw new Error('Could not download generated output '+file.filename);
-    const blob=await fileRes.blob();const ext=(file.filename.split('.').pop()||'bin').toLowerCase();const key=currentPlan.project_id+'/'+crypto.randomUUID()+'-generated-'+safeFileName(file.filename);
-    const {error:uploadError}=await sb.storage.from('studio-media').upload(key,blob,{contentType:blob.type||'application/octet-stream',upsert:false});if(uploadError)throw new Error('Generated file storage failed: '+uploadError.message);
-    const assetType=file.kind==='images'?'image':(file.kind==='audio'?'audio':'video');
-    const {error:metaError}=await sb.from('assets').insert({project_id:currentPlan.project_id,asset_type:assetType,storage_key:key,mime_type:blob.type||null,size_bytes:blob.size,source_provider:'local_comfyui',license_metadata:{workflow_node:file.nodeId,source_filename:file.filename,job_id:id}});
-    if(metaError)throw new Error('Generated asset metadata failed: '+metaError.message);
-   }
-   $('providerStatus').textContent='Local ComfyUI completed. '+files.length+' generated asset(s) saved to your private media library.';await loadMedia();return;
-  }
- }
- throw new Error('Local job is still running after 6 minutes. Check ComfyUI queue; the job may continue locally.');
-}
-$('runComfyJobBtn').addEventListener('click',runComfyWorkflow);
-$('checkComfyQueueBtn').addEventListener('click',async()=>{const base=$('comfyEndpoint').value.trim().replace(/\/$/,'');try{const r=await fetch(base+'/queue');if(!r.ok)throw new Error('HTTP '+r.status);const q=await r.json();$('providerStatus').textContent='ComfyUI queue connected. Running: '+(q.queue_running?.length||0)+' · Pending: '+(q.queue_pending?.length||0);}catch(e){$('providerStatus').textContent='Queue check failed: '+e.message;}});
-
-
-/* Export a local FFmpeg PowerShell render kit for a real MP4 render on the user's PC. */
-function psQuote(s){return "'"+String(s).replace(/'/g,"''")+"'";}
-$('downloadRenderKitBtn').addEventListener('click',async()=>{
- if(!requireCloudProject())return;
- const {data:clips,error}=await sb.from('timeline_clips').select('*').eq('project_id',currentPlan.project_id).order('start_seconds');
- if(error){$('timelineStatus').textContent='Could not load timeline clips: '+error.message;return;}
- const {data:tracks}=await sb.from('timeline_tracks').select('*').eq('project_id',currentPlan.project_id);
- const {data:assets}=await sb.from('assets').select('*').eq('project_id',currentPlan.project_id);
- const trackById=new Map((tracks||[]).map(t=>[t.id,t]));
- const assetById=new Map((assets||[]).map(a=>[a.id,a]));
- const videoClips=(clips||[]).filter(c=>['video','image'].includes(trackById.get(c.track_id)?.track_type)&&c.asset_id&&assetById.has(c.asset_id));
- const audioClips=(clips||[]).filter(c=>['audio','voice','music','sfx'].includes(trackById.get(c.track_id)?.track_type)&&c.asset_id&&assetById.has(c.asset_id));
- if(!videoClips.length){$('timelineStatus').textContent='Add at least one image/video asset to a Video or Images timeline clip before exporting a render kit.';return;}
- $('timelineStatus').textContent='Preparing private download links and FFmpeg render script…';
- const signedByKey=new Map();
- for(const a of assets||[]){const {data,error}=await sb.storage.from('studio-media').createSignedUrl(a.storage_key,3600);if(!error&&data?.signedUrl)signedByKey.set(a.id,data.signedUrl);}
- const res=Number($('renderResolution').value)||1080;
- const dims=currentPlan.format==='9:16'?[Math.round(res*9/16),res]:currentPlan.format==='1:1'?[res,res]:currentPlan.format==='4:3'?[Math.round(res*4/3),res]:[Math.round(res*16/9),res];
- const width=dims[0]%2?dims[0]-1:dims[0],height=dims[1]%2?dims[1]-1:dims[1];
- const all=videoClips.concat(audioClips);const inputDefs=[];const videoInput=[];const audioInput=[];
- for(const clip of all){const asset=assetById.get(clip.asset_id),url=signedByKey.get(asset.id);if(!url){$('timelineStatus').textContent='Could not create a private download link for '+asset.storage_key;return;}const fileName=safeFileName(asset.storage_key.split('/').pop());const localName='asset_'+(inputDefs.length+1)+'_'+fileName;const inputIndex=inputDefs.length+1;inputDefs.push({url,localName,asset,clip});if(videoClips.includes(clip))videoInput.push({clip,asset,localName,inputIndex});else audioInput.push({clip,asset,localName,inputIndex});}
- const total=Math.max(1,...videoInput.map(x=>Number(x.clip.start_seconds)+Number(x.clip.duration_seconds)));
- const args=[];
- args.push("'-y'","'-f'","'lavfi'","'-i'","'color=c=black:s="+width+"x"+height+":r=30:d="+(total+1)+"'");
- for(const x of videoInput){if(x.asset.asset_type==='image')args.push("'-loop'","'1'","'-t'",psQuote(String(x.clip.duration_seconds)),"'-i'","$workDir + "+psQuote(x.localName));else args.push("'-i'","$workDir + "+psQuote(x.localName));}
- for(const x of audioInput)args.push("'-i'","$workDir + "+psQuote(x.localName));
- let filters=[],last='base0';
- filters.push('[0:v]format=yuv420p[base0]');
- videoInput.forEach((x,i)=>{const v='vsrc'+i,next='base'+(i+1),start=Number(x.clip.start_seconds)||0,dur=Number(x.clip.duration_seconds)||5,trim=Number(x.clip.trim_in_seconds)||0;filters.push('['+x.inputIndex+':v]trim=start='+trim+':duration='+dur+',setpts=PTS-STARTPTS,scale='+width+':'+height+':force_original_aspect_ratio=decrease,pad='+width+':'+height+':(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,setpts=PTS-STARTPTS+'+start+'/TB['+v+']');filters.push('['+last+']['+v+']overlay=x=0:y=0:eof_action=pass:shortest=0:enable=between(t\\,'+start+'\\,'+(start+dur)+')['+next+']');last=next;});
- const srtCues=[];let sceneTime=0;for(const scene of currentPlan.scenes||[]){const d=Number(scene.duration_seconds)||5;const m=(scene.description||'').match(/DIALOGUE:\s*([\s\S]*?)(?:\s+NARRATION:|$)/);const n=(scene.description||'').match(/NARRATION:\s*([\s\S]*?)(?:\s+MUSIC:|$)/);const line=[m?.[1],n?.[1]].filter(Boolean).join(' — ');if(line)srtCues.push({start:sceneTime,end:sceneTime+d,text:line});sceneTime+=d;}
- const fmtSrt=t=>{const ms=Math.round((t%1)*1000),whole=Math.floor(t),hh=String(Math.floor(whole/3600)).padStart(2,'0'),mm=String(Math.floor(whole%3600/60)).padStart(2,'0'),ss=String(whole%60).padStart(2,'0');return hh+':'+mm+':'+ss+','+String(ms).padStart(3,'0');};
- const srt=srtCues.map((q,i)=>(i+1)+'\n'+fmtSrt(q.start)+' --> '+fmtSrt(q.end)+'\n'+q.text).join('\n\n');
- let filter=filters.join(';')+';['+last+']subtitles=filename=subtitles.srt:force_style=FontName=Arial\\,FontSize=22\\,Outline=2[vout]';
- if(audioInput.length){audioInput.forEach((x,i)=>{const start=Number(x.clip.start_seconds)||0,dur=Number(x.clip.duration_seconds)||5,trim=Number(x.clip.trim_in_seconds)||0,vol=Number(x.clip.volume)||1;filters.push('['+x.inputIndex+':a]atrim=start='+trim+':duration='+dur+',asetpts=PTS-STARTPTS,volume='+vol+',adelay='+Math.round(start*1000)+':all=1[a'+i+']');});filters.push(audioInput.map((x,i)=>'[a'+i+']').join('')+'amix=inputs='+audioInput.length+':duration=longest:dropout_transition=0[aout]');filter=filters.join(';')+';['+last+']subtitles=filename=subtitles.srt:force_style=FontName=Arial\\,FontSize=22\\,Outline=2[vout]';}
- const ps=[];
- ps.push('$ErrorActionPreference = "Stop"');
- ps.push('$workDir = Join-Path (Get-Location) "studio_render_'+currentPlan.project_id.slice(0,8)+'"');
- ps.push('New-Item -ItemType Directory -Force -Path $workDir | Out-Null');
- ps.push('Write-Host "Downloading project media. Signed links expire in about one hour."');
- inputDefs.forEach(x=>{ps.push('Invoke-WebRequest -Uri '+psQuote(x.url)+' -OutFile (Join-Path $workDir '+psQuote(x.localName));});
- ps.push("[System.IO.File]::WriteAllText((Join-Path $workDir 'subtitles.srt'), "+psQuote(srt)+", [System.Text.UTF8Encoding]::new($false))");
- ps.push('$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue; if (-not $ffmpeg) { throw "FFmpeg is not installed or not on PATH. Install FFmpeg and reopen PowerShell." }');
- ps.push('$oldLocation = Get-Location; Set-Location $workDir');
- ps.push('$argsList = @('+args.join(',')+", '-filter_complex', "+psQuote(filter)+", '-map', '[vout]'"+(audioInput.length?", '-map', '[aout]'":", '-an")+", '-t', "+psQuote(String(total))+", '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p'"+(audioInput.length?", '-c:a', 'aac', '-b:a', '192k'":"")+", (Join-Path $workDir 'final_video.mp4'))");
- ps.push('& ffmpeg @argsList');
- ps.push('if ($LASTEXITCODE -ne 0) { throw "FFmpeg render failed with exit code $LASTEXITCODE" }');
- ps.push('Write-Host "Render complete: $workDir\\final_video.mp4"');
- ps.push('Set-Location $oldLocation');
- const script=ps.join('\n');
- downloadText(script,'render-studio-project.ps1','text/plain;charset=utf-8');
- $('timelineStatus').textContent='Local MP4 render kit downloaded. Run it on Windows with FFmpeg installed. Private media links expire in about one hour. Review output and audio sync before publishing.';
-});
-
-
-
 function refreshBrowserVoices(){
  const select=$('browserVoice');if(!select||!('speechSynthesis' in window))return;
  const chosen=select.value;const voices=window.speechSynthesis.getVoices();
