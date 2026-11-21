@@ -1,6 +1,6 @@
 # Self-hosted Studio AI engine contract
 
-This project intentionally does **not** call Gemini, OpenAI, Replicate, Hugging Face Inference, or another hosted free-tier generation API. The worker calls only the owner-operated engine configured with `STUDIO_ENGINE_URL`.
+This project intentionally does **not** call any other company's free-tier or paid hosted AI generation API. No Gemini, OpenAI, Replicate, Hugging Face Inference, or hosted demo endpoints. The worker calls only the owner-operated engine configured with `STUDIO_ENGINE_URL`; the laptop browser remains a thin client.
 
 ## Worker contract
 
@@ -56,6 +56,9 @@ The worker stores returned files in the private `studio-media` bucket, inserts r
 - `render`: final assembly, subtitles, audio mixing and MP4.
 
 One engine endpoint provides a common model interface. Model adapters are selected internally by job input and an allowlisted model registry. Never accept arbitrary model download URLs or arbitrary shell commands from a user job.
+
+## Worker container
+Build from the repository root with `docker build -f worker/Dockerfile -t studio-worker worker`. Run it as a private background process, not as a public browser endpoint. The current Render service is a static site and is not a GPU worker; do not attach this worker to it or claim generation is live until a separate worker and self-hosted inference engine are actually running.
 
 ## Deployment secrets
 
