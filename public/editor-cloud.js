@@ -19,6 +19,8 @@ async function save(){
    rows.push({id,project_id:p,track_id:tids[track(c.track)],asset_id:aid,title:c.name,start_seconds:Math.max(0,Number(c.start)||0),duration_seconds:Math.max(.05,Number(c.trimOut)-Number(c.trimIn)),trim_in_seconds:Math.max(0,Number(c.trimIn)||0),volume:Math.max(0,Math.min(2,Number(c.volume)||0)),sort_order:i,properties:{editor_clip:true,kind:c.kind,original_name:c.name,trim_out_seconds:c.trimOut,speed:c.speed,filter:c.filter,transition:c.transition,fade:c.fade,fit:c.fit,rotate:c.rotate,scale:c.scale,animation:c.animation,text:c.text,text_size:c.textSize,text_position:c.textPosition,sticker:c.sticker,frame_rate:c.frameRate||30,keyframes:c.keyframes||[]}});
   }
   if(rows.length){const r=await sb.from("timeline_clips").upsert(rows,{onConflict:"id"});if(r.error)throw r.error;}
+  const existing=await sb.from("timeline_clips").select("id").eq("project_id",p).in("track_id",Object.values(tids));if(existing.error)throw existing.error;
+  const keep=new Set(rows.map(x=>x.id));for(const row of existing.data||[])if(!keep.has(row.id)){const del=await sb.from("timeline_clips").delete().eq("id",row.id).eq("project_id",p);if(del.error)throw del.error;}
   say("Cloud timeline saved · "+rows.length+" clips and media stored in your private project.");
  }catch(e){say("Cloud save failed: "+(e.message||e));}
  finally{busy=false;if(again){again=false;queue();}}
