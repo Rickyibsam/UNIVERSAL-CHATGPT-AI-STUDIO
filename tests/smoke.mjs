@@ -9,6 +9,8 @@ for (const [index, source] of scripts.entries()) {
   new vm.Script(source, { filename: `inline-script-${index}.js` });
 }
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
+const rendererSmoke = readFileSync(new URL('./renderer_smoke.py', import.meta.url), 'utf8');
+assert.ok(rendererSmoke.includes('4k-zoom') && rendererSmoke.includes('1080p-slide-chroma'), 'real 1080p and 4K FFmpeg render tests exist');
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
