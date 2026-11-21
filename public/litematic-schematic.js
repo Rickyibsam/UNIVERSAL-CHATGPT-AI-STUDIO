@@ -1,4 +1,4 @@
-import { parseNbt } from "./world-schematic.js";
+import { parseNbt, objectBlocks } from "./world-schematic.js";
 
 const MAX_DIMENSION = 128;
 const MAX_CELLS = 1000000;
@@ -134,4 +134,96 @@ export async function decodeLitematic(input) {
     buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream("deflate"))).arrayBuffer();
   }
   return decodeLitematicRoot(parseNbt(buffer));
+}
+
+class LitematicWriter {
+  constructor(){ this.bytes=[]; }
+  u8(v){ this.bytes.push(Number(v)&255); }
+  i16(v){ this.u8((v>>8)&255); this.u8(v&255); }
+  i32(v){ this.u8((v>>>24)&255); this.u8((v>>>16)&255); this.u8((v>>>8)&255); this.u8(v&255); }
+  i64(v){ const n=BigInt.asUintN(64,BigInt(v)); for(let s=56n;s>=0n;s-=8n)this.u8(Number((n>>s)&255n)); }
+  string(v){ const data=new TextEncoder().encode(String(v)); if(data.length>65535)throw new Error("Litematic NBT string is too long."); this.i16(data.length); for(const b of data)this.u8(b); }
+  named(type,name,write){ this.u8(type); this.string(name); write(); }
+  int(name,v){ this.named(3,name,()=>this.i32(v)); }
+  long(name,v){ this.named(4,name,()=>this.i64(v)); }
+  stringTag(name,v){ this.named(8,name,()=>this.string(v)); }
+  compound(name){ this.u8(10); this.string(name); }
+  list(name,type,values){ this.u8(9); this.string(name); this.u8(type); this.i32(values.length); }
+  longArray(name,values){ this.u8(12); this.string(name); this.i32(values.length); for(const v of values)this.i64(v); }
+  end(){ this.u8(0); }
+  finish(){ return Uint8Array.from(this.bytes); }
+}
+
+function paletteParts(state){
+  const match=String(state).match(/^([^[]+)(?:\\[([^\\]]*)\\])?$/);
+  if(!match)throw new Error("Unsupported Minecraft block state: "+state);
+  const properties={};
+  if(match[2])for(const part of match[2].split(",")){
+    const at=part.indexOf("=");
+    if(at<1)throw new Error("Invalid Minecraft block-state property: "+part);
+    properties[part.slice(0,at)]=part.slice(at+1);
+  }
+  return {name:match[1],properties};
+}
+
+function packedLongs(indexes,paletteSize){
+  const bits=Math.max(2,Math.ceil(Math.log2(Math.max(2,paletteSize))));
+  const mask=(1n<<BigInt(bits))-1n;
+  const longs=Array(Math.ceil(indexes.length*bits/64)).fill(0n);
+  indexes.forEach((value,i)=>{
+    const bit=i*bits,index=Math.floor(bit/64),shift=bit%64,n=BigInt(value)&mask;
+    longs[index]|=n<<BigInt(shift);
+    if(shift+bits>64)longs[index+1]|=n>>BigInt(64-shift);
+  });
+  return longs.map(v=>BigInt.asIntN(64,v));
+}
+
+export function buildLitematicNbt(objects){
+  const cells=new Map();
+  for(const item of Array.isArray(objects)?objects:[])for(const b of objectBlocks(item))cells.set(b.x+","+b.y+","+b.z,b);
+  if(!cells.size)throw new Error("Add Minecraft blocks or a Minecraft house/mob before exporting a .litematic.");
+  const blocks=[...cells.values()];
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for(const b of blocks){minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);minZ=Math.min(minZ,b.z);maxX=Math.max(maxX,b.x);maxY=Math.max(maxY,b.y);maxZ=Math.max(maxZ,b.z);}
+  const width=maxX-minX+1,height=maxY-minY+1,length=maxZ-minZ+1,volume=width*height*length;
+  if(![width,height,length].every(Number.isSafeInteger)||width>128||height>128||length>128||volume>1000000)throw new Error("Litematic exceeds the safe 128×128×128 export limit.");
+  const states=[...new Set(["minecraft:air",...blocks.map(b=>String(b.state))])].sort();
+  const palette=new Map(states.map((state,index)=>[state,index]));
+  const indexes=new Uint32Array(volume);
+  for(const b of blocks){const x=b.x-minX,y=b.y-minY,z=b.z-minZ;indexes[(y*length+z)*width+x]=palette.get(String(b.state));}
+  const packed=packedLongs(indexes,states.length);
+  const writer=new LitematicWriter();
+  writer.u8(10);writer.string("");
+  writer.int("Version",6);writer.int("SubVersion",1);writer.int("MinecraftDataVersion",0);
+  writer.compound("Metadata");
+  writer.stringTag("Name","Universal Studio World");
+  writer.stringTag("Author","Universal ChatGPT AI Studio");
+  writer.stringTag("Description","Exported from Universal ChatGPT AI Studio");
+  writer.int("RegionCount",1);writer.int("TotalBlocks",blocks.length);writer.int("TotalVolume",volume);
+  writer.long("TimeCreated",BigInt(Date.now()));writer.long("TimeModified",BigInt(Date.now()));
+  writer.compound("EnclosingSize");writer.int("x",width);writer.int("y",height);writer.int("z",length);writer.end();
+  writer.end();
+  writer.compound("Regions");
+  writer.compound("Universal Studio");
+  writer.compound("Position");writer.int("x",minX);writer.int("y",minY);writer.int("z",minZ);writer.end();
+  writer.compound("Size");writer.int("x",width);writer.int("y",height);writer.int("z",length);writer.end();
+  writer.list("BlockStatePalette",10,states);
+  for(const state of states){
+    const parts=paletteParts(state);
+    writer.stringTag("Name",parts.name);
+    const entries=Object.entries(parts.properties);
+    if(entries.length){writer.compound("Properties");for(const [key,value] of entries)writer.stringTag(key,value);writer.end();}
+    writer.end();
+  }
+  writer.longArray("BlockStates",packed);
+  writer.list("TileEntities",10,[]);writer.list("Entities",10,[]);
+  writer.end();writer.end();writer.end();
+  return writer.finish();
+}
+
+export async function encodeLitematic(objects){
+  if(typeof CompressionStream==="undefined")throw new Error("This browser does not support GZIP compression for .litematic export.");
+  const raw=buildLitematicNbt(objects);
+  const stream=new Blob([raw]).stream().pipeThrough(new CompressionStream("gzip"));
+  return await new Response(stream).blob();
 }
