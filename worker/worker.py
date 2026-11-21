@@ -190,7 +190,7 @@ def run_ffmpeg(args: list[str]) -> None:
 
 def ffmpeg_text(value: Any) -> str:
     text = str(value or "")
-    return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace("%", "\\%").replace(",", "\\,").replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
+    return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace("%", "\\%").replace(",", ",").replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
 
 
 def atempo_filters(speed: float) -> str:
@@ -243,12 +243,12 @@ def keyframe_value_expression(clip: dict[str, Any], field: str, default: float, 
         t1, v1 = deduped[index + 1]
         span = max(0.000001, t1 - t0)
         expression = (
-            f"if(lt({time_var}\\,{t1:.6f})\\,"
-            f"{v0:.6f}+({v1:.6f}-{v0:.6f})*({time_var}-{t0:.6f})/{span:.6f}\\,"
+            f"if(lt({time_var},{t1:.6f}),"
+            f"{v0:.6f}+({v1:.6f}-{v0:.6f})*({time_var}-{t0:.6f})/{span:.6f},"
             f"{expression})"
         )
     first_time, first_value = deduped[0]
-    return f"if(lt({time_var}\\,{first_time:.6f})\\,{first_value:.6f}\\,{expression})"
+    return f"if(lt({time_var},{first_time:.6f}),{first_value:.6f},{expression})"
 
 
 def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int, start: float, duration: float) -> str:
@@ -308,12 +308,12 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     fade = max(0.0, min(5.0, float(clip.get("fade_seconds", clip.get("fade", 0)) or 0)))
     transition = str(clip.get("transition") or "None").lower()
     if transition == "zoom":
-        local_t = "max(0\\,min(1\\,t/0.5))"
+        local_t = "max(0,min(1,t/0.5))"
         filters.append(f"scale=w='iw*(0.8+0.2*{local_t})':h='ih*(0.8+0.2*{local_t})':eval=frame")
     elif transition == "wipe":
-        progress = "min(1\\,max(0\\,t/0.5))"
+        progress = "min(1,max(0,t/0.5))"
         filters.append(
-            f"scale=w='max(1\\,iw*{progress})':h=ih:eval=frame,"
+            f"scale=w='max(1,iw*{progress})':h=ih:eval=frame,"
             f"pad={width}:{height}:0:0:color=black@0"
         )
     if fade > 0 or transition in ("fade", "dissolve"):
@@ -413,10 +413,10 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             end_seconds = start_seconds + display_duration
             transition = str(clip.get("transition") or "None").lower()
             if transition == "slide left":
-                overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,main_w*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
+                overlay_x = f"if(lt(t,{start_seconds + 0.5:.5f}),main_w*(1-(t-{start_seconds:.5f})/0.5),0)"
                 overlay_y = "0"
             elif transition == "slide right":
-                overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,-main_w*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
+                overlay_x = f"if(lt(t,{start_seconds + 0.5:.5f}),-main_w*(1-(t-{start_seconds:.5f})/0.5),0)"
                 overlay_y = "0"
             elif transition == "zoom":
                 overlay_x = "(main_w-overlay_w)/2"

@@ -63,7 +63,7 @@ def main() -> None:
             "[1:v]setpts=PTS-STARTPTS,scale=1280:720:force_original_aspect_ratio=decrease,"
             "pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=rgba,"
             "geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
-            "a='alpha(X,Y)*if(lt(T\\,0.5)\\,0.2+(1-0.2)*(T-0)/0.5\\,1)',"
+            "a='alpha(X,Y)*if(lt(T,0.5),0.2+(1-0.2)*(T-0)/0.5,1)',"
             "fps=30,setsar=1,setpts=PTS/1+0/TB[v0];"
             "[0:v][v0]overlay=x=0:y=0:eof_action=pass:shortest=0:"
             "enable='between(t,0,1)'[vout]",
@@ -72,7 +72,7 @@ def main() -> None:
             folder, "720p-wipe", 1280, 720, 30,
             "[1:v]setpts=PTS-STARTPTS,fps=30,scale=1280:720:force_original_aspect_ratio=decrease,"
             "pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,format=rgba,"
-            "scale=w='max(1\\,iw*min(1\\,max(0\\,t/0.5)))':h=ih:eval=frame,"
+            "scale=w='max(1,iw*min(1,max(0,t/0.5)))':h=ih:eval=frame,"
             "pad=1280:720:0:0:color=black@0,setpts=PTS/1+0/TB[v0];"
             "[0:v][v0]overlay=x=0:y=0:eof_action=pass:shortest=0:"
             "enable='between(t,0,1)'[vout]",
