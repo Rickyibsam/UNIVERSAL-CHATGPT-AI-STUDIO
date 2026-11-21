@@ -490,7 +490,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             elif transition == "slide right":
                 overlay_x = f"if(lt(t,{start_seconds + 0.5:.5f}),-main_w*(1-(t-{start_seconds:.5f})/0.5),0)"
                 overlay_y = "0"
-            elif transition == "zoom" or abs(float(clip.get("scale", 100) or 100) - 100.0) > 0.001:
+            elif transition == "zoom" or abs(float(clip.get("scale", 100) or 100) - 100.0) > 0.001 or any(isinstance(k, dict) and "scale" in k for k in (clip.get("keyframes") or [])):
                 overlay_x = "(main_w-overlay_w)/2"
                 overlay_y = "(main_h-overlay_h)/2"
             else:
@@ -506,12 +506,12 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         input_offset = 1 + len(visual_inputs)
         for index, (clip, _path, _asset) in enumerate(audio_inputs):
             input_id = input_offset + index
-            start_seconds = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", 0)) or 0)))
-            trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
-            duration = max(0.1, min(900.0, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30)))
+            start_seconds = min(900.0, frame_time(clip.get("start_seconds", clip.get("start", 0)), fps))
+            trim_in = min(3600.0, frame_time(clip.get("trim_in_seconds", clip.get("trimIn", 0)), fps))
+            duration = min(900.0, frame_time(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30, fps, 1))
             volume = max(0.0, min(4.0, float(clip.get("volume", 1.0))))
             speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
-            delay = int(start_seconds * 1000)
+            delay = round(start_seconds * 1000)
             label = f"a{index}"
             filters.append(
                 f"[{input_id}:a]atrim=start={trim_in:.5f}:duration={duration:.5f},"
