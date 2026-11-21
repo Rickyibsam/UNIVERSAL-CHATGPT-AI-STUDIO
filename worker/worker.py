@@ -255,6 +255,12 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     if transition == "zoom":
         local_t = "max(0\\,min(1\\,t/0.5))"
         filters.append(f"scale=w='iw*(0.8+0.2*{local_t})':h='ih*(0.8+0.2*{local_t})':eval=frame")
+    elif transition == "wipe":
+        progress = "min(1\\,max(0\\,t/0.5))"
+        filters.append(
+            f"crop=w='max(1\\,iw*{progress})':h=ih:x=0:y=0:eval=frame,"
+            f"pad={width}:{height}:0:0:color=black@0"
+        )
     if fade > 0 or transition in ("fade", "dissolve"):
         fade_duration = min(fade if fade > 0 else 0.5, duration / 2)
         if fade_duration > 0:
