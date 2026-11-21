@@ -47,6 +47,8 @@ assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite pos
 assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
 assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
 assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');
+assert.ok(worker.includes('slide left') && worker.includes('slide right'), 'cloud renderer must support slide transitions');
+assert.ok(worker.includes('transition == "zoom"'), 'cloud renderer must support zoom transitions');
 assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue screen removal');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
