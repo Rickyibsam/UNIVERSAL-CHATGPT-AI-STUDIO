@@ -48,6 +48,29 @@ The engine returns JSON:
 
 The worker stores returned files in the private `studio-media` bucket, inserts rows in `assets`, stores structured screenplay data in `generation_jobs.result_payload`, and completes the generation job with asset IDs. The engine must enforce output limits and must not return arbitrary URLs for the worker to fetch.
 
+## Cloud MP4 renderer input
+
+A `render` job is handled inside the private worker with FFmpeg; it does not call the AI engine. The worker downloads only project-owned asset IDs from the private Storage bucket.
+
+```json
+{
+  "width": 1920,
+  "height": 1080,
+  "fps": 24,
+  "burn_subtitles": true,
+  "subtitle_srt": "1\n00:00:00,000 --> 00:00:02,000\nExample caption\n",
+  "clips": [
+    {"track_type": "video", "asset_id": "project-owned-asset-uuid", "duration_seconds": 5},
+    {"track_type": "image", "asset_id": "project-owned-image-uuid", "duration_seconds": 4},
+    {"track_type": "voice", "asset_id": "project-owned-audio-uuid", "start_seconds": 0, "volume": 1.0},
+    {"track_type": "music", "asset_id": "project-owned-music-uuid", "start_seconds": 0, "volume": 0.18},
+    {"track_type": "sfx", "asset_id": "project-owned-sfx-uuid", "start_seconds": 3.2, "volume": 0.7}
+  ]
+}
+```
+
+The current renderer concatenates visual clips in supplied order, normalizes video size/FPS, mixes voice/music/SFX tracks, can burn subtitles, and stores MP4 plus optional SRT output in private Storage. It enforces a 15-minute render limit and 4K maximum dimensions. More advanced multi-track positioning, transitions and effects remain future renderer work.
+
 ## Supported job families
 
 - `script`: structured screenplay JSON in `result_payload` (no binary artifact required).
