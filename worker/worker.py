@@ -281,13 +281,20 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
     if not visual:
         raise PermanentJobError("RENDER_REQUIRES_VISUAL_CLIPS")
 
-    visual_layout: list[tuple[dict[str, Any], float, float]] = []
+    visual_layout: list[tuple[dict[str, Any], float, float, float]] = []
     cursor = 0.0
     for clip in visual:
-        duration = max(0.1, min(120, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 5)))
+        source_duration = max(0.1, min(120, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 5)))
+        speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+        display_duration = source_duration / speed
         start_seconds = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", cursor)) or 0)))
-        visual_layout.append((clip, start_seconds, duration))
-        cursor = max(cursor, start_seconds + duration)
+        visual_layout.append((clip, start_seconds, source_duration, display_duration))
+        cursor = max(cursor, start_seconds + display_duration)
+    for clip in audio:
+        audio_source_duration = max(0.1, min(900.0, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30)))
+        audio_speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+        audio_start = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", 0)) or 0)))
+        cursor = max(cursor, audio_start + audio_source_duration / audio_speed)
     total_duration = cursor
     if total_duration <= 0 or total_duration > 900:
         raise PermanentJobError("RENDER_DURATION_LIMIT_EXCEEDED")
@@ -307,15 +314,17 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             if asset_id not in downloaded:
                 downloaded[asset_id] = await download_asset(client, str(job["project_id"]), asset_id, folder, index)
             path, asset = downloaded[asset_id]
-            if clip in [x[0] for x in visual_layout]:
-                _, start_seconds, duration = next(x for x in visual_layout if x[0] is clip)
-                visual_inputs.append((clip, path, asset, start_seconds, duration))
+            visual_entry = next((x for x in visual_layout if x[0] is clip), None)
+            if visual_entry is not None:
+                _, start_seconds, source_duration, display_duration = visual_entry
+                visual_inputs.append((clip, path, asset, start_seconds, source_duration, display_duration))
             else:
                 audio_inputs.append((clip, path, asset))
 
-        for clip, path, asset, _start, duration in visual_inputs:
+        for clip, path, asset, _start, source_duration, _display_duration in visual_inputs:
             if (asset.get("mime_type") or "").startswith("image/"):
-                command += ["-loop", "1", "-t", str(duration), "-i", str(path)]
+                trim_in = max(0.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0))
+                command += ["-loop", "1", "-t", str(source_duration + trim_in), "-i", str(path)]
             else:
                 command += ["-i", str(path)]
 
@@ -324,15 +333,14 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
 
         filters: list[str] = ["[0:v]format=rgba[base0]"]
         current_base = "base0"
-        for index, (clip, _path, asset, start_seconds, duration) in enumerate(visual_inputs):
+        for index, (clip, _path, asset, start_seconds, source_duration, display_duration) in enumerate(visual_inputs):
             input_index = index + 1
             trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
-            speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
             label = f"v{index}"
-            chain = render_filter_chain(clip, width, height, fps, start_seconds, duration)
-            filters.append(f"[{input_index}:v]trim=start={trim_in:.5f}:duration={duration:.5f},{chain}[{label}]")
+            chain = render_filter_chain(clip, width, height, fps, start_seconds, display_duration)
+            filters.append(f"[{input_index}:v]trim=start={trim_in:.5f}:duration={source_duration:.5f},{chain}[{label}]")
             next_base = f"mixv{index}"
-            end_seconds = start_seconds + duration
+            end_seconds = start_seconds + display_duration
             filters.append(
                 f"[{current_base}][{label}]overlay=x=0:y=0:eof_action=pass:shortest=0:"
                 f"enable='between(t,{start_seconds:.5f},{end_seconds:.5f})'[{next_base}]"
