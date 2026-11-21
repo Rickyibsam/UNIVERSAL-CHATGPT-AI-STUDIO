@@ -52,6 +52,9 @@ for (const template of ['cinematic-short','3d-animation','minecraft','product-ad
 assert.ok(html.includes("box.dispatchEvent(new Event('input'"), 'applying a template triggers the prompt input listener');
 assert.ok(html.includes('/functions/v1/studio-gateway'), 'screenplay generation must call the cloud gateway');
 assert.ok(html.includes("from('generation_jobs')"), 'screenplay UI must poll durable job progress');
+assert.ok(html.includes('id="generateVideoBtn"') && html.includes("action:'generate-video'"), 'text-to-video UI must enqueue a real video generation job');
+assert.ok(html.includes("job.status==='succeeded'") && html.includes('output_asset_ids'), 'video generation must wait for stored output assets before handoff');
+assert.ok(html.includes("window.__studioEditor?.load(clips)") && html.includes("location.hash='#proEditor'"), 'generated video clips must be imported and open the Professional Editor');
 assert.ok(!/generativelanguage\.googleapis\.com|GEMINI_API_KEY|api\.openai\.com|replicate\.com|fal\.ai/i.test(html), 'browser must not call hosted AI generation APIs');
 assert.ok(worker.includes('claim_studio_jobs'), 'private worker must claim durable jobs');
 assert.ok(worker.includes('STUDIO_ENGINE_URL'), 'private worker must call only the self-hosted engine');
