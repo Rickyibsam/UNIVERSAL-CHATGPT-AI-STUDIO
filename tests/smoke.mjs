@@ -58,6 +58,7 @@ assert.ok(worker.includes('keyframe_value_expression'), 'cloud renderer must app
 assert.ok(worker.includes('upload_file_artifact') && !worker.includes('base64.b64encode(output.read_bytes())'), 'rendered MP4 must stream to Storage without base64 buffering');
 assert.ok(html.includes('editorAddKeyframe'), 'editor must expose keyframe controls');
 assert.ok(html.includes('worldCanvas') && html.includes('exportWorldGlb'), 'interactive 3D world canvas and GLB export controls exist');
+assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTransform'), 'voxel block placement and object transform controls exist');
 assert.ok(worldEditor.includes('OrbitControls') && worldEditor.includes('GLTFExporter') && worldEditor.includes('world_scenes'), '3D editor supports orbit controls, GLB export and cloud storage');
 assert.ok(worldMigration.includes('world_scenes_select_owner') && worldMigration.includes('auth.uid()'), 'world scene data is protected by project-owner RLS');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
