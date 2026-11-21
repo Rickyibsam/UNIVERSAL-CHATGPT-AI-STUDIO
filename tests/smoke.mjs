@@ -18,6 +18,7 @@ const worldEditor = readFileSync(new URL('../public/world-3d.js', import.meta.ur
 execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldEditor, stdio: ['pipe', 'ignore', 'pipe'] });
 const worldMigration = readFileSync(new URL('../supabase/migrations/20261121174500_world_scenes.sql', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
+assert.ok(cloudEditor.includes('__studioCloudLoadManifest') && html.includes('window.__studioCloudLoadManifest?.(s.editor)') && html.includes('setFrameRate(value)'), 'project recovery must restore cloud media, editor settings and frame rate');
 const requiredIds = [
   'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
@@ -47,9 +48,14 @@ assert.ok(worker.includes('async def render_timeline'), 'private worker must imp
 assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle burn-in');
 assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
 assert.ok(worker.includes('def render_filter_chain'), 'cloud renderer must map editor filter presets to FFmpeg filters');
+assert.ok(html.includes('id="editorFps"') && html.includes('frameRate:editorFps()') && html.includes('frame_rate:editorFps()'), 'timeline edits and exports must use selectable frame rates');
+assert.ok(html.includes('localTime*editorFps()') && html.includes('sourceOffset=snapFrame(localTime*speed)'), 'keyframes and split points must be clip-local and frame-snapped');
+assert.ok(html.includes('let editorTimebase=editorFps()') && html.includes('next/old'), 'changing FPS must preserve keyframe timing in seconds');
+assert.ok(worker.includes('any(isinstance(k, dict) and "scale" in k'), 'animated scale overlays must remain centered in the output frame');
+assert.ok(worker.includes('scale_expr = keyframe_value_expression') && worker.includes('frame_time(source_duration, fps, 1)'), 'renderer must apply animated scale and quantize clips to exact frames');
 assert.ok(worker.includes('def atempo_filters'), 'cloud renderer must support audio playback speed');
 assert.ok(worker.includes('drawtext=fontfile='), 'cloud renderer must burn clip title overlays');
-assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite positioned video and overlay tracks');
+assert.ok(worker.includes('overlay=x=') && worker.includes('eof_action=pass:shortest=0'), 'cloud renderer must composite positioned video and overlay tracks');
 assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
 assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
 assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');

@@ -60,3 +60,9 @@ The static frontend is not a GPU inference service. A separate FFmpeg render web
 - Branch: `main`
 - Frontend: https://universal-chatgpt-ai-studio.onrender.com
 - Supabase Edge Function: `studio-gateway`
+
+
+### Frame-accurate editor updates
+- Timeline frame rate can be selected at 24/25/30/50/60 fps; clip start/trim/split and keyframe positions snap to the selected frame grid.
+- Opacity and scale keyframes are carried to the cloud renderer. Render clip start, trim and durations are quantized to the selected frame rate.
+- The free Render web renderer accepts a render job only after authenticated project ownership and asset ownership checks.
