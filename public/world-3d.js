@@ -99,7 +99,7 @@ else{
       const geo=new THREE.BoxGeometry(1,1,1),mat=material(palette.grass);
       const blocks=new THREE.InstancedMesh(geo,mat,20*20);let n=0;const dummy=new THREE.Object3D();
       for(let x=-10;x<10;x++)for(let z=-10;z<10;z++){dummy.position.set(x,-.5,z);dummy.updateMatrix();blocks.setMatrixAt(n++,dummy.matrix);}
-      blocks.count=n;scene.add(blocks);
+      blocks.count=n;blocks.instanceMatrix.needsUpdate=true;scene.add(blocks);
       const dirt=new THREE.Mesh(new THREE.BoxGeometry(20,1,20),material(0x79583c));dirt.position.y=-1.05;scene.add(dirt);
     }else{
       const plane=new THREE.Mesh(new THREE.PlaneGeometry(80,80),material(mode.includes("Cartoon")?0x67a96a:0x718b69));plane.rotation.x=-Math.PI/2;plane.position.y=-.12;plane.receiveShadow=true;scene.add(plane);
@@ -142,7 +142,7 @@ else{
     const {data,error}=await db.from("world_scenes").select("*").eq("project_id",projectId).maybeSingle();
     if(error){status("3D world could not load: "+error.message);return;}
     if(!data)return;
-    loading=true;
+    loading=true;selectedId=null;
     bridge.setScene({world_type:data.world_type,location:data.location,weather:data.weather,...(data.scene_data||{})});
     buildEnvironment();loading=false;
     status("3D world restored from private cloud storage · "+bridge.objects.length+" object(s).");
@@ -171,8 +171,8 @@ else{
       $("clearWorldScene")?.addEventListener("click",()=>{selectedId=null;buildEnvironment();});
       window.addEventListener("studio-world-changed",()=>{buildEnvironment();scheduleSave();});
       window.addEventListener("studio-cloud-project-opened",e=>loadWorld(e.detail?.projectId));
-      window.__worldStudioSave=saveWorld;
-      window.__worldStudioRestore=data=>{if(!data)return;loading=true;bridge.setScene(data);buildEnvironment();loading=false;scheduleSave();};
+      window.__worldStudioSave=saveWorld;window.__world3dReady=true;
+      window.__worldStudioRestore=data=>{if(!data)return;loading=true;selectedId=null;bridge.setScene(data);buildEnvironment();loading=false;scheduleSave();};
       window.addEventListener("resize",resize);
       function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}
       animate();
