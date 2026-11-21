@@ -41,7 +41,8 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [ ] Permanent background queue worker for non-render jobs.
 - [ ] Owner-operated self-hosted inference engine and licensed model adapters for real AI screenplay, image, video, speech, music and SFX generation. The current engine registry has no adapters; `STUDIO_ENGINE_URL` is not configured.
 - [ ] Real consistency generation across characters and locations using model references.
-- [ ] Lightweight 3D asset/world editor and Minecraft world editor; these are not implemented yet.
+- [x] Basic browser-based 3D scene editor with orbit/zoom, primitive buildings/trees/vehicles/characters/animals, Minecraft voxel blocks/houses/mobs, object position/scale/rotation, GLB/JSON export and project-scoped cloud scene storage.
+- [ ] Full Minecraft world import/export (.mcworld/.schem), terrain sculpting, block palette/material editing and AI-generated 3D assets.
 - [ ] Full browser regression/E2E and database workflow tests with authenticated project data.
 
 Lip-sync is intentionally out of scope. No third-party hosted AI APIs, paid GPU, or paid worker have been enabled. The Render renderer runs on the free web-service tier and may sleep while idle; long/high-resolution jobs are subject to its memory and execution limits.
