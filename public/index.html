@@ -50,16 +50,25 @@
 <div class="actions"><button class="btn" id="saveVersionBtn">Create recovery point</button><button class="btn secondary" id="loadVersionsBtn">View version history</button></div>
 <div id="versionItems" class="empty">No recovery versions loaded.</div>
 </section>
-<section class="panel" id="providerStudio">
-<h2>AI provider connections</h2><p class="desc">Connect a self-hosted local ComfyUI instance on a computer with a compatible GPU. The hosted Render website cannot run large video models itself.</p>
+<section class="panel" id="audioStudio">
+<h2>Voice, music & sound effects studio</h2>
+<p class="desc">Low-spec PC mode: use your browser's installed voices for narration preview and generate simple original music / sound-effect WAV files without a GPU. Browser voices are preview-only and cannot be exported as audio from this page.</p>
+<div class="field full"><label for="narrationText">NARRATION / DIALOGUE TEXT</label><textarea id="narrationText" placeholder="Write or paste the narration or character dialogue to preview..."></textarea></div>
+<div class="fieldgrid"><div class="field"><label for="browserVoice">INSTALLED SYSTEM VOICE</label><select id="browserVoice"><option value="">Default voice</option></select></div><div class="field"><label for="speechRate">SPEAKING SPEED</label><input id="speechRate" type="number" min="0.6" max="1.5" step="0.1" value="1"></div></div>
+<div class="actions"><button class="btn" id="previewNarrationBtn">Preview narration</button><button class="btn secondary" id="stopNarrationBtn">Stop voice</button><button class="btn secondary" id="downloadNarrationBtn">Download dialogue text</button></div>
+<div class="fieldgrid" style="margin-top:14px"><div class="field"><label for="audioPreset">GENERATED AUDIO TYPE</label><select id="audioPreset"><option value="cinematic">Cinematic background music</option><option value="ambient">Soft ambient music</option><option value="suspense">Suspense pulse</option><option value="whoosh">Whoosh transition SFX</option><option value="impact">Soft impact SFX</option><option value="sparkle">Magic sparkle SFX</option><option value="rain">Rain ambience SFX</option></select></div><div class="field"><label for="audioLength">DURATION (SECONDS)</label><select id="audioLength"><option value="10">10 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option></select></div></div>
+<div class="actions"><button class="btn" id="generateAudioBtn">Generate WAV audio</button></div>
+<div id="audioStudioStatus" class="hint">Generated audio is procedural/original, not a neural AI music model. Save the downloaded WAV in your project media library using the upload control.</div>
+</section><section class="panel" id="providerStudio">
+<h2>AI provider connections</h2><p class="desc">Optional image workflow only. Your i5 laptop has no confirmed dedicated GPU; ComfyUI image generation may be very slow or run out of memory. AI video and lip-sync are intentionally disabled for this build.</p>
 <div class="field"><label for="referenceAsset">REFERENCE IMAGE FOR CHARACTER / WORLD CONTINUITY</label><select id="referenceAsset"><option value="">No reference image selected</option></select><p class="hint">In a custom ComfyUI API workflow, use a LoadImage node with image value {{REFERENCE_IMAGE}} and connect it to a reference/IP-Adapter/ControlNet path supported by your model.</p></div><div class="fieldgrid"><div class="field"><label for="comfyEndpoint">LOCAL COMFYUI URL</label><input id="comfyEndpoint" value="http://127.0.0.1:8188" placeholder="http://127.0.0.1:8188"></div><div class="field"><label for="ollamaEndpoint">LOCAL OLLAMA URL (OPTIONAL)</label><input id="ollamaEndpoint" placeholder="http://127.0.0.1:11434"></div></div>
 <div class="field full"><label for="comfyWorkflow">COMFYUI API WORKFLOW JSON (USE {{PROMPT}} AS PROMPT PLACEHOLDER)</label><textarea id="comfyWorkflow" placeholder='Paste a ComfyUI API-format workflow JSON here. It must contain an output node and a text node with {{PROMPT}}.'></textarea></div>
-<div class="fieldgrid"><div class="field"><label for="generationType">GENERATION TYPE</label><select id="generationType"><option value="image">Image</option><option value="video">Video</option><option value="speech">Voice / speech</option><option value="music">Music</option><option value="lipsync">Lip-sync</option></select></div><div class="field"><label for="generationPrompt">SHOT / AUDIO PROMPT</label><input id="generationPrompt" placeholder="Describe this shot or audio asset"></div></div>
+<div class="fieldgrid"><div class="field"><label for="generationType">GENERATION TYPE</label><select id="generationType"><option value="image">Image</option></select></div><div class="field"><label for="generationPrompt">SHOT / AUDIO PROMPT</label><input id="generationPrompt" placeholder="Describe this shot or audio asset"></div></div>
 <div class="actions"><button class="btn" id="runComfyJobBtn">Run local ComfyUI workflow</button><button class="btn secondary" id="checkComfyQueueBtn">Check ComfyUI queue</button></div>
 <div class="actions"><button class="btn secondary" id="saveProviderSettingsBtn">Save local endpoints</button><button class="btn secondary" id="testComfyBtn">Test ComfyUI connection</button><button class="btn secondary" id="testOllamaBtn">Test Ollama connection</button></div>
 <div id="providerStatus" class="hint">No local provider configured. No paid provider is connected or called.</div>
 <div class="hint">Provider endpoints are stored only in this browser. For a public multi-user product, connect providers through a secure backend and server-side secrets; never paste API secrets into this page.</div>
-</section><section class="panel"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">Voice & lip-sync · planned</span><span class="pill">Music & SFX · planned</span><span class="pill">Timeline renderer · planned</span><span class="pill">Quality checks · planned</span></div></section>
+</section><section class="panel"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">System voice preview · available</span><span class="pill">Procedural music & SFX · WAV</span><span class="pill">Local FFmpeg render kit · available</span><span class="pill">Automated media QC · pending</span></div></section>
 </main></div><footer class="foot"><span>UNIVERSAL-CHATGPT-AI-STUDIO · Independent project</span><span>Free-first development · Paid providers require your approval · <a href="https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO/blob/main/docs/LOCAL_AI_SETUP.md" target="_blank" rel="noopener">Local AI setup guide</a></span></footer></div>
 <script>
 const $=id=>document.getElementById(id);let currentPlan=null;const characterDrafts=[];function renderCharacters(){$('characterList').innerHTML=characterDrafts.length?characterDrafts.map((x,i)=>'<div class="scene"><div class="sceneNo">C'+(i+1)+'</div><div><h3>'+escapeHtml(x.name)+'</h3><p>'+escapeHtml(x.description)+'</p><p class="hint">Voice: '+escapeHtml(x.voice_profile.style||'Not specified')+' · '+escapeHtml(x.continuity_notes||'No continuity notes')+'</p><button class="btn secondary remove-character" data-index="'+i+'">Remove</button></div></div>').join(''):'No characters added yet.';$('characterList').querySelectorAll('.remove-character').forEach(b=>b.addEventListener('click',()=>{characterDrafts.splice(Number(b.dataset.index),1);renderCharacters();}));} $('addCharacterBtn').addEventListener('click',()=>{const name=$('characterName').value.trim(),description=$('characterDescription').value.trim();if(!name||!description){setAuthStatus('Enter a character name and appearance description.');return;}characterDrafts.push({name,description,voice_profile:{style:$('characterVoice').value.trim()},continuity_notes:$('characterContinuity').value.trim()});$('characterName').value='';$('characterDescription').value='';$('characterVoice').value='';$('characterContinuity').value='';renderCharacters();});
@@ -345,8 +354,8 @@ $('realAiStoryBtn').addEventListener('click',async()=>{
 async function runComfyWorkflow(){
  const base=$('comfyEndpoint').value.trim().replace(/\/$/,'');const raw=$('comfyWorkflow').value.trim();const basePrompt=$('generationPrompt').value.trim()||(currentPlan?.scenes?.[0]?.description||$('prompt').value.trim());const continuity=(currentPlan?.characters||[]).map(ch=>'CHARACTER '+ch.name+': '+ch.description+' CONTINUITY: '+(ch.continuity_notes||'')).join('\n');const prompt=[basePrompt,currentPlan?.setting?'WORLD CONTINUITY: '+currentPlan.setting:'',continuity].filter(Boolean).join('\n\n');
  if(!base||!raw||!prompt){$('providerStatus').textContent='Enter ComfyUI URL, API workflow JSON and a prompt.';return;}
- let workflow;try{workflow=JSON.parse(raw)}catch(e){$('providerStatus').textContent='Workflow JSON is invalid: '+e.message;return;}if(raw.includes('YOUR_CHECKPOINT.safetensors')){$('providerStatus').textContent='Select the exact checkpoint filename installed in your local ComfyUI, then save the workflow. For video, voice, music and lip-sync, paste a matching API-format workflow from the required model/node pack.';return;}
- const seed=Math.floor(Math.random()*2147483647),duration=Number(currentPlan?.duration_seconds||60);const baseSize=1024,ratio=currentPlan?.format==='9:16'?9/16:currentPlan?.format==='4:3'?4/3:currentPlan?.format==='1:1'?1:16/9;const width=Math.max(512,Math.round((ratio>=1?baseSize:baseSize*ratio)/64)*64),height=Math.max(512,Math.round((ratio<=1?baseSize:baseSize/ratio)/64)*64);
+ let workflow;try{workflow=JSON.parse(raw)}catch(e){$('providerStatus').textContent='Workflow JSON is invalid: '+e.message;return;}if(raw.includes('YOUR_CHECKPOINT.safetensors')){$('providerStatus').textContent='Select the exact checkpoint filename installed in your local ComfyUI, then save the workflow. Only image generation is enabled here. Video generation and lip-sync are intentionally excluded.';return;}
+ const seed=Math.floor(Math.random()*2147483647),duration=Number(currentPlan?.duration_seconds||60);const baseSize=512,ratio=currentPlan?.format==='9:16'?9/16:currentPlan?.format==='4:3'?4/3:currentPlan?.format==='1:1'?1:16/9;const width=Math.max(512,Math.round((ratio>=1?baseSize:baseSize*ratio)/64)*64),height=Math.max(512,Math.round((ratio<=1?baseSize:baseSize/ratio)/64)*64);
  let referenceImagePath='';if(raw.includes('{{REFERENCE_IMAGE}}')){const refId=$('referenceAsset').value;if(!refId){$('providerStatus').textContent='Select a reference image or remove the {{REFERENCE_IMAGE}} placeholder from the workflow.';return;}const refAsset=(await sb.from('assets').select('*').eq('id',refId).single());if(refAsset.error){$('providerStatus').textContent='Could not load reference image: '+refAsset.error.message;return;}const signed=await sb.storage.from('studio-media').createSignedUrl(refAsset.data.storage_key,300);if(signed.error){$('providerStatus').textContent='Could not access reference image: '+signed.error.message;return;}const refBlob=await (await fetch(signed.data.signedUrl)).blob();const form=new FormData();form.append('image',refBlob,refAsset.data.storage_key.split('/').pop());form.append('overwrite','true');form.append('type','input');const upload=await fetch(base+'/upload/image',{method:'POST',body:form});const uploadData=await upload.json();if(!upload.ok||!uploadData.name)throw new Error('ComfyUI reference image upload failed: '+(uploadData.error||upload.status));referenceImagePath=(uploadData.subfolder?uploadData.subfolder+'/':'')+uploadData.name;}
  function replacePlaceholders(obj){if(obj==='{{REFERENCE_IMAGE}}')return referenceImagePath;if(obj==='{{SEED}}')return seed;if(obj==='{{DURATION}}')return duration;if(obj==='{{WIDTH}}')return width;if(obj==='{{HEIGHT}}')return height;if(Array.isArray(obj))return obj.map(replacePlaceholders);if(obj&&typeof obj==='object'){for(const k of Object.keys(obj))obj[k]=replacePlaceholders(obj[k]);return obj;}if(typeof obj==='string')return obj.replaceAll('{{PROMPT}}',prompt).replaceAll('{{NEGATIVE_PROMPT}}','').replaceAll('{{SEED}}',String(seed)).replaceAll('{{DURATION}}',String(duration));return obj;}
  workflow=replacePlaceholders(workflow);
@@ -441,5 +450,59 @@ $('downloadRenderKitBtn').addEventListener('click',async()=>{
  $('timelineStatus').textContent='Local MP4 render kit downloaded. Run it on Windows with FFmpeg installed. Private media links expire in about one hour. Review output and audio sync before publishing.';
 });
 
+
+
+function refreshBrowserVoices(){
+ const select=$('browserVoice');if(!select||!('speechSynthesis' in window))return;
+ const chosen=select.value;const voices=window.speechSynthesis.getVoices();
+ select.innerHTML='<option value="">Default voice</option>'+voices.map((v,i)=>'<option value="'+i+'">'+escapeHtml(v.name+' ('+v.lang+')')+'</option>').join('');
+ if(chosen)select.value=chosen;
+}
+if('speechSynthesis' in window){refreshBrowserVoices();window.speechSynthesis.onvoiceschanged=refreshBrowserVoices;}
+$('previewNarrationBtn').addEventListener('click',()=>{
+ const text=$('narrationText').value.trim();if(!text){$('audioStudioStatus').textContent='Enter narration or dialogue first.';return;}
+ if(!('speechSynthesis' in window)){$('audioStudioStatus').textContent='This browser does not provide installed system voices.';return;}
+ window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text),voices=window.speechSynthesis.getVoices(),index=$('browserVoice').value;
+ if(index!==''&&voices[Number(index)])utterance.voice=voices[Number(index)];
+ utterance.rate=Math.min(1.5,Math.max(.6,Number($('speechRate').value)||1));
+ utterance.onstart=()=>$('audioStudioStatus').textContent='Playing system voice preview. This preview is not saved as an audio file.';
+ utterance.onerror=e=>$('audioStudioStatus').textContent='Voice preview error: '+e.error;
+ window.speechSynthesis.speak(utterance);
+});
+$('stopNarrationBtn').addEventListener('click',()=>{if('speechSynthesis' in window)window.speechSynthesis.cancel();$('audioStudioStatus').textContent='Voice preview stopped.';});
+$('downloadNarrationBtn').addEventListener('click',()=>{const t=$('narrationText').value.trim();if(!t){$('audioStudioStatus').textContent='Enter dialogue first.';return;}downloadText(t,'narration-dialogue.txt','text/plain;charset=utf-8');});
+function wavBlob(buffer){
+ const channels=buffer.numberOfChannels,length=buffer.length,rate=buffer.sampleRate,bytes=44+length*channels*2,view=new DataView(new ArrayBuffer(bytes));let p=0;
+ const write=(s)=>{for(let i=0;i<s.length;i++)view.setUint8(p++,s.charCodeAt(i));};
+ write('RIFF');view.setUint32(p,bytes-8,true);p+=4;write('WAVE');write('fmt ');view.setUint32(p,16,true);p+=4;view.setUint16(p,1,true);p+=2;view.setUint16(p,channels,true);p+=2;view.setUint32(p,rate,true);p+=4;view.setUint32(p,rate*channels*2,true);p+=4;view.setUint16(p,channels*2,true);p+=2;view.setUint16(p,16,true);p+=2;write('data');view.setUint32(p,bytes-44,true);p+=4;
+ const data=Array.from({length:channels},(_,c)=>buffer.getChannelData(c));
+ for(let i=0;i<length;i++)for(let c=0;c<channels;c++){const sample=Math.max(-1,Math.min(1,data[c][i]));view.setInt16(p,sample<0?sample*32768:sample*32767,true);p+=2;}
+ return new Blob([view.buffer],{type:'audio/wav'});
+}
+$('generateAudioBtn').addEventListener('click',async()=>{
+ const status=$('audioStudioStatus'),preset=$('audioPreset').value,duration=Number($('audioLength').value)||20,sampleRate=22050;
+ if(!window.OfflineAudioContext){status.textContent='Offline audio generation is not supported by this browser. Try current Chrome or Edge.';return;}
+ status.textContent='Generating original '+preset+' WAV…';
+ try{
+  const ctx=new OfflineAudioContext(2,Math.ceil(sampleRate*duration),sampleRate),master=ctx.createGain();master.gain.value=.16;master.connect(ctx.destination);
+  const addTone=(freq,start,dur,gain,type='sine')=>{const osc=ctx.createOscillator(),amp=ctx.createGain();osc.type=type;osc.frequency.value=freq;amp.gain.setValueAtTime(.0001,start);amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),start+.04);amp.gain.setValueAtTime(Math.max(.0002,gain),Math.max(start+.05,start+dur-.08));amp.gain.exponentialRampToValueAtTime(.0001,start+dur);osc.connect(amp);amp.connect(master);osc.start(start);osc.stop(start+dur+.02);};
+  if(['cinematic','ambient','suspense'].includes(preset)){
+   const scale=preset==='suspense'?[110,130.81,155.56,196]:preset==='ambient'?[130.81,164.81,196,261.63]:[110,146.83,174.61,220];
+   scale.forEach((f,i)=>addTone(f,0,duration,.055/(i+1),'sine'));
+   const step=preset==='suspense'?.45:1.1;for(let t=0;t<duration;t+=step){const f=scale[Math.floor(t/step)%scale.length]*(preset==='cinematic'?2:1);addTone(f,t,Math.min(.7,duration-t),preset==='suspense'?.045:.022,'triangle');}
+  }else if(preset==='whoosh'){
+   const noise=ctx.createBufferSource(),buf=ctx.createBuffer(1,Math.ceil(sampleRate*duration),sampleRate),arr=buf.getChannelData(0);for(let i=0;i<arr.length;i++)arr[i]=(Math.random()*2-1)*(i/arr.length);
+   noise.buffer=buf;const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.setValueAtTime(180,0);filter.frequency.exponentialRampToValueAtTime(9000,duration*.85);const g=ctx.createGain();g.gain.value=.35;noise.connect(filter);filter.connect(g);g.connect(master);noise.start();noise.stop(duration);
+  }else if(preset==='impact'){addTone(55,0,Math.min(1.5,duration),.55,'sine');addTone(90,0,.18,.3,'triangle');}
+  else if(preset==='sparkle'){for(let i=0;i<18;i++)addTone(500+Math.random()*1800,Math.random()*Math.max(1,duration-.2),.18+Math.random()*.3,.12,'sine');}
+  else if(preset==='rain'){
+   const noise=ctx.createBufferSource(),buf=ctx.createBuffer(1,Math.ceil(sampleRate*duration),sampleRate),arr=buf.getChannelData(0);for(let i=0;i<arr.length;i++)arr[i]=(Math.random()*2-1)*.22;
+   noise.buffer=buf;const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=1800;noise.connect(filter);filter.connect(master);noise.start();noise.stop(duration);
+  }
+  const rendered=await ctx.startRendering(),blob=wavBlob(rendered),name='studio-'+preset+'-'+Date.now()+'.wav';
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  status.textContent='WAV generated and downloaded: '+name+'. Upload it in Media Library to add it to your project timeline.';
+ }catch(e){status.textContent='Audio generation failed: '+e.message;}
+});
 
 </script></body></html>
