@@ -28,7 +28,8 @@ jobs:
           python-version: "3.12"
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: python -m pip install -r worker/requirements.txt
-      - run: python -m compileall -q worker engine
+      - run: python -m compileall -q worker engine hf-space-wan21
+      - run: python tests/wan_zero_gpu_test.py
       - run: python tests/worker_stream_upload_test.py
       - run: python tests/worker_render_unit.py
       - run: python tests/renderer_smoke.py

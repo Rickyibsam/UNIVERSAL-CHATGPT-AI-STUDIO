@@ -48,7 +48,7 @@ async def authenticated_user(client: httpx.AsyncClient, auth: dict[str, str]) ->
 async def owned_job(client: httpx.AsyncClient, auth: dict[str, str], job_id: str, project_id: str) -> dict[str, Any]:
     response = await client.get(
         SUPABASE_URL + "/rest/v1/generation_jobs",
-        params={"id": "eq." + job_id, "project_id": "eq." + project_id, "job_type": "eq.render", "select": "*"},
+        params={"id": "eq." + job_id, "project_id": "eq." + project_id, "job_type": "in.(render,video)", "select": "*"},
         headers=auth,
     )
     if response.status_code != 200:
@@ -92,10 +92,18 @@ async def start_render(job_id: str, body: RunBody, authorization: str | None = H
         job = await owned_job(client, auth, job_id, body.project_id)
     if job.get("status") not in ("queued", "running"):
         raise HTTPException(status_code=409, detail="JOB_NOT_QUEUED")
+    if job.get("job_type") == "video" and not worker.HF_T2V_SPACE_ID and not worker.ENGINE_URL:
+        worker.headers = auth
+        await worker.patch_job(client, job_id, {
+            "status": "failed", "error_code": "VIDEO_PROVIDER_NOT_CONFIGURED",
+            "error_message": "No Wan ZeroGPU Space or self-hosted inference engine is configured.",
+            "finished_at": worker.utc_now(), "locked_at": None, "locked_by": None,
+        })
+        raise HTTPException(status_code=503, detail="VIDEO_PROVIDER_NOT_CONFIGURED")
     if job_id not in active_jobs:
         active_jobs.add(job_id)
         asyncio.create_task(run_job(job, auth))
-    return {"job_id": job_id, "status": "accepted", "message": "Render task accepted by the cloud renderer."}
+    return {"job_id": job_id, "status": "accepted", "message": "Generation task accepted by the cloud worker."}
 
 
 @app.get("/jobs/{job_id}")
