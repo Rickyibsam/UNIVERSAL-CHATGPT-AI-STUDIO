@@ -19,7 +19,7 @@ This static website does not contain a GPU. The local adapters let your own comp
 
 If Ollama is already running as a Windows service, update its environment through Windows service settings and restart it instead of starting a second copy. Never expose port 11434 publicly or through an unauthenticated tunnel.
 
-## 2. Local image, video, speech, music and lip-sync with ComfyUI
+## 2. Optional local image generation with ComfyUI
 
 1. Install ComfyUI locally using its official installation instructions: https://docs.comfy.org/installation.
 2. Install only model workflows and custom nodes you trust. Check every model and node license before commercial use.
@@ -30,11 +30,17 @@ If Ollama is already running as a Windows service, update its environment throug
 7. Choose the generation type, enter the shot/audio prompt, save settings and run the local workflow.
 8. When ComfyUI finishes and returns supported output nodes, the Studio downloads the output and saves it to the signed-in project's private media library.
 
-The Studio pre-fills a basic text-to-image graph. Replace `YOUR_CHECKPOINT.safetensors` with the exact checkpoint filename installed in your ComfyUI models/checkpoints folder before running it. The workflow JSON must be valid for your installed ComfyUI version and custom nodes. Different image, video, TTS, music and lip-sync models require different workflows. The Studio cannot guess a valid graph for every custom node pack.
+The Studio pre-fills a basic text-to-image graph. Replace `YOUR_CHECKPOINT.safetensors` with the exact checkpoint filename installed in your ComfyUI models/checkpoints folder before running it. The workflow JSON must be valid for your installed ComfyUI version and custom nodes. Only image generation is exposed in the current Studio workflow selector. AI video generation and lip-sync are intentionally excluded from this build. The Studio cannot guess a valid graph for every custom node pack.
 
 ComfyUI API reference: https://github.com/Comfy-Org/docs/blob/main/development/comfyui-server/comms_routes.mdx
 
-## 3. Character and location consistency
+## 3. Low-spec voice preview and procedural audio
+
+The Audio Studio uses the browser Speech Synthesis API to preview narration with voices already installed on Windows. This is playback only; browser speech voices are not exported as audio files. The Studio can generate simple original procedural music beds and sound effects (cinematic, ambient, suspense, whoosh, impact, sparkle and rain) as WAV files using the browser OfflineAudioContext. These are synthesized audio patterns, not neural AI music generation. Download the WAV and upload it through Media Library to add it to the project.
+
+For the i5-8265U / 8 GB RAM laptop, use this low-spec audio path and avoid running large local video diffusion models. The local Qwen 2.5 3B screenplay model may still be slow; close other applications and allow it time to respond.
+
+## 4. Character and location consistency
 
 - Create each recurring character in Character Studio with a detailed description, voice profile and continuity rules.
 - Use the same character reference image(s) in the ComfyUI workflow for every shot when the chosen model supports image references, IP-Adapter, ControlNet, reference conditioning or character LoRAs.
@@ -42,7 +48,7 @@ ComfyUI API reference: https://github.com/Comfy-Org/docs/blob/main/development/c
 - Reuse the same world/location description and lighting/camera rules.
 - A text prompt alone cannot guarantee identical faces or clothing across independently generated clips. Review every shot and regenerate failures.
 
-## 4. Media, timeline and recovery
+## 5. Media, timeline and recovery
 
 - Sign in and save a cloud project before uploading files.
 - Uploaded files go to the private `studio-media` Storage bucket. Access is restricted by project ownership.
@@ -50,13 +56,13 @@ ComfyUI API reference: https://github.com/Comfy-Org/docs/blob/main/development/c
 - Export the timeline manifest as an editable EDL-style JSON file and export draft subtitles as WebVTT.
 - Create recovery points before major changes. Restoring a point loads its snapshot into the editor; save it after review to persist the restored version.
 
-## 5. Rendering and quality
+## 6. Rendering and quality
 
-The current hosted Studio does not run FFmpeg, GPU video diffusion or a final MP4/4K render worker. The timeline manifest and subtitles are exports, not a finished movie. Final video assembly, audio mixing, subtitle burn-in, 1080p/4K export and media-level automated QC remain a separate rendering-engine milestone.
+The hosted Studio does not run GPU video diffusion or a hosted MP4/4K render worker. It can download a local PowerShell FFmpeg render kit that assembles linked image/video clips, audio tracks and draft subtitles on the user's PC. This requires FFmpeg installed locally, generated media linked to timeline clips, and adequate disk space. It has not yet passed a full real-project render test. Media-level automated QC remains pending.
 
-A browser page hosted on Render cannot use Render's CPU/static-site build to run your computer's GPU. For local generation, your computer must stay awake with Ollama/ComfyUI running. No paid provider is enabled by this project.
+A browser page hosted on Render cannot use Render's CPU/static-site build to run your computer's GPU. For local generation, your computer must stay awake with Ollama/ComfyUI running. No paid provider is enabled by this project. Lip-sync is intentionally omitted.
 
-## Security
+## 7. Security
 
 - Do not paste provider secrets or Supabase secret/service-role keys into the browser.
 - Keep Ollama and ComfyUI bound to localhost; do not expose their ports to the public internet.
