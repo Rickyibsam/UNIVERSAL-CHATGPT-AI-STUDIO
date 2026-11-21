@@ -37,6 +37,14 @@ assert.ok(worker.includes('STUDIO_ENGINE_URL'), 'private worker must call only t
 assert.ok(worker.includes('async def render_timeline'), 'private worker must implement cloud MP4 assembly');
 assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle burn-in');
 assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
+assert.ok(worker.includes('def render_filter_chain'), 'cloud renderer must map editor filter presets to FFmpeg filters');
+assert.ok(worker.includes('def atempo_filters'), 'cloud renderer must support audio playback speed');
+assert.ok(worker.includes('drawtext=fontfile='), 'cloud renderer must burn clip title overlays');
+assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite positioned video and overlay tracks');
+assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
+assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
+assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');
+
 assert.ok(worker.includes('"status": "succeeded"'), 'worker must use the database success status');
 assert.ok(!/generativelanguage\.googleapis\.com|api\.openai\.com|replicate\.com|fal\.ai/i.test(worker), 'worker must not call third-party hosted generation APIs');
 for (const id of ['templateStudio','worldStudio','importStudio','publishStudio','templateGrid','worldPreview','metadataOutput']) assert.ok(html.includes('id="'+id+'"'), 'creator workspace module exists: '+id);
