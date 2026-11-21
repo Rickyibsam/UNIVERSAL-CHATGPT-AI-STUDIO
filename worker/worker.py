@@ -171,7 +171,7 @@ async def upload_file_artifact(
     return asset_id
 
 
-def upload_artifact(
+async def upload_artifact(
     client: httpx.AsyncClient, job: dict[str, Any], artifact: dict[str, Any]
 ) -> str:
     try:
