@@ -27,7 +27,7 @@ const root = {
       Position: { x: -4, y: 2, z: 10 },
       Size: { x: 4, y: 3, z: 4 },
       BlockStatePalette: palette,
-      BlockStates: packCompact(indexes, 2)
+      BlockStates: packCompact(indexes, 3)
     },
     "annex": {
       Position: { x: 0, y: 2, z: 10 },
