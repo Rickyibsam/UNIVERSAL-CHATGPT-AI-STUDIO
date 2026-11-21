@@ -38,6 +38,9 @@ assert.ok(!/generativelanguage\.googleapis\.com|api\.openai\.com|replicate\.com|
 for (const id of ['templateStudio','worldStudio','importStudio','publishStudio','templateGrid','worldPreview','metadataOutput']) assert.ok(html.includes('id="'+id+'"'), 'creator workspace module exists: '+id);
 assert.ok(html.includes('studio-import-rights-draft'), 'rights record draft is saved in browser session');
 assert.ok(html.includes('renderer_status'), 'world plan export identifies planning-only status');
+for (const id of ['proEditor','editorFiles','editorTimeline','editorSplit','editorDuplicate','editorDelete','editorApplyTiming','editorApplyEffects','editorApplyText','editorUndo','editorRedo','editorExport','editorSave']) assert.ok(html.includes('id="'+id+'"'), 'professional editor control exists: '+id);
+for (const feature of ['editor-v1','Split selected at playhead','Shorts effects & filters','TRANSITION','TRIM IN','Text, captions & stickers','Drag clips between tracks','render_manifest_only_cloud_render_worker_required']) assert.ok(html.includes(feature), 'editor capability marker exists: '+feature);
+
 assert.ok(!html.includes('127.0.0.1'), 'browser app must not depend on localhost AI services');
 assert.ok(!html.toLowerCase().includes('ollama'), 'local Ollama dependency must be removed');
 assert.ok(!html.toLowerCase().includes('comfyui'), 'local ComfyUI dependency must be removed');
