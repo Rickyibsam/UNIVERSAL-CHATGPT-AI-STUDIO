@@ -5,8 +5,8 @@ const pid=()=>typeof currentPlan!=="undefined"?currentPlan?.project_id:null;
 const say=m=>{if($("proEditorStatus"))$("proEditorStatus").textContent=m;};
 const track=t=>({video:"Editor Video",overlay:"Editor Overlay",audio:"Editor Audio",sfx:"Editor SFX",subtitles:"Editor Subtitles"})[t]||"Editor Video";
 async function save(){
- const p=pid(),api=window.__studioEditor;if(!p||!api)return;
- if(busy){again=true;return;}busy=true;
+ const p=pid(),api=window.__studioEditor;if(!p||!api)return false;
+ if(busy){again=true;return false;}busy=true;
  try{
   const auth=await sb.auth.getUser();if(!auth.data.user)throw Error("Sign in to save the editor timeline.");
   const tids={};
@@ -22,7 +22,7 @@ async function save(){
   const existing=await sb.from("timeline_clips").select("id").eq("project_id",p).in("track_id",Object.values(tids));if(existing.error)throw existing.error;
   const keep=new Set(rows.map(x=>x.id));for(const row of existing.data||[])if(!keep.has(row.id)){const del=await sb.from("timeline_clips").delete().eq("id",row.id).eq("project_id",p);if(del.error)throw del.error;}
   say("Cloud timeline saved · "+rows.length+" clips and media stored in your private project.");
- }catch(e){say("Cloud save failed: "+(e.message||e));}
+ }catch(e){say("Cloud save failed: "+(e.message||e));return false;}
  finally{busy=false;if(again){again=false;queue();}}
 }
 function queue(){if(quiet||!pid())return;clearTimeout(timer);timer=setTimeout(save,1800);}
