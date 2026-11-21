@@ -69,6 +69,15 @@ def main() -> None:
             "enable='between(t,0,1)'[vout]",
         )
         render_case(
+            folder, "720p-wipe", 1280, 720, 30,
+            "[1:v]setpts=PTS-STARTPTS,fps=30,scale=1280:720:force_original_aspect_ratio=decrease,"
+            "pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,format=rgba,"
+            "scale=w='max(1\\,iw*min(1\\,max(0\\,t/0.5)))':h=ih:eval=frame,"
+            "pad=1280:720:0:0:color=black@0,setpts=PTS/1+0/TB[v0];"
+            "[0:v][v0]overlay=x=0:y=0:eof_action=pass:shortest=0:"
+            "enable='between(t,0,1)'[vout]",
+        )
+        render_case(
             folder, "4k-zoom", 3840, 2160, 30,
             "[1:v]setpts=PTS-STARTPTS,fps=30,scale=3840:2160:force_original_aspect_ratio=decrease,"
             "pad=3840:2160:(ow-iw)/2:(oh-ih)/2,setsar=1,format=rgba,"
@@ -77,7 +86,7 @@ def main() -> None:
             "[0:v][v0]overlay=x='(main_w-overlay_w)/2':y='(main_h-overlay_h)/2':"
             "eof_action=pass:shortest=0:enable='between(t,0,1)'[vout]",
         )
-    print("PASS: 720p opacity keyframes, 1080p chroma/slide and 4K zoom MP4 render smoke tests")
+    print("PASS: 720p opacity keyframes/wipe, 1080p chroma/slide and 4K zoom MP4 render smoke tests")
 
 
 if __name__ == "__main__":
