@@ -1,55 +1,49 @@
 # UNIVERSAL-CHATGPT-AI-STUDIO
 
-An independent, modular AI filmmaking workspace. The goal is to turn a prompt into a planned production: story, scenes, characters, visual assets, video shots, voice, music, editing and quality review.
+A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browser client only; model inference, provider orchestration, project data and final rendering are intended to run on hosted infrastructure.
 
-## Current build status
+## Infrastructure
+- Frontend: Render Static Site, auto-deploying from `main`.
+- Database, Auth and private media storage: Supabase project.
+- Secure application gateway: Supabase Edge Function `studio-gateway` (JWT verification enabled).
+- Generation jobs: `generation_jobs` table with provider, state, progress, retry and error metadata.
+- Projects, scenes, characters, assets, versions and timeline: private Supabase tables with RLS.
 
-- [x] GitHub repository and Render static site
-- [x] Responsive production-planner interface
-- [x] Prompt and production settings
-- [x] Basic scene-plan draft builder
-- [x] Save a draft locally in the current browser
-- [ ] User accounts and cloud project library
-- [ ] AI story/script planning service
-- [ ] Character and world reference manager
-- [ ] Image/video/voice/music provider adapters
-- [ ] Background generation queue and asset storage
-- [ ] Timeline assembly and export
-- [ ] Automated quality and continuity checks
+## Cloud-first rules
+1. Never require Ollama, ComfyUI, local GPU models, PowerShell or local FFmpeg from the user.
+2. Never expose provider API keys in browser code or local storage.
+3. Free-tier providers may be enabled only within their documented quotas and terms.
+4. Paid provider calls must remain disabled until the owner explicitly approves the provider and spending.
+5. Show provider, model, estimated cost, duration/resolution limits and account quota before paid generation.
+6. Use asynchronous jobs, progress, retry, cancellation, idempotency and private asset storage.
+7. Lip-sync is intentionally out of scope for the current build.
+8. Do not claim a generation or export is complete until a real output has been generated and verified.
 
-**Important:** the current scene planner is a browser-side prototype. It does not call an AI model and does not generate video, voice or music yet. Provider credentials are not configured.
+## Current implementation status
+- [x] Responsive browser production workspace.
+- [x] Supabase Auth, cloud projects, private project media and RLS-protected data tables.
+- [x] Scene/character editing, timeline data, subtitles export and project version snapshots.
+- [x] Supabase Edge Function `studio-gateway` deployed with JWT verification.
+- [x] Cloud screenplay client wired to the gateway.
+- [ ] Add the `GEMINI_API_KEY` Supabase Edge Function secret to activate the free-tier Gemini text adapter.
+- [ ] Verify a real authenticated cloud screenplay request and confirm job persistence.
+- [ ] Cloud image generation adapter and private asset ingestion.
+- [ ] Cloud video provider adapters (Veo, Kling, Runway, MiniMax or alternatives), including provider-specific cost and quota gates.
+- [ ] Hosted background worker / job polling for long-running image/video/audio tasks.
+- [ ] Cloud voice and music generation adapters.
+- [ ] Hosted timeline renderer for MP4 export; browser-side local FFmpeg is not part of the target architecture.
+- [ ] Automated media QC, continuity checks, recovery tests and end-to-end workflow tests.
 
-## Principles
+## Free-tier text provider
+The gateway targets Gemini 2.5 Flash-Lite. Google's current pricing page lists a free tier for eligible model usage, subject to rate limits and terms. Free-tier prompts may be used by Google to improve products; do not send confidential content unless the applicable terms are acceptable.
 
-1. Free-first infrastructure. Do not activate a paid API, subscription, or paid Render resource without explicit owner approval.
-2. Provider-agnostic design. Generation vendors must be replaceable adapters, not hard-coded throughout the application.
-3. Honest capability reporting. Show model limits, output resolution, duration, availability and cost before a job is submitted.
-4. User ownership. Projects, prompts and generated assets must be private to their owner.
-5. Resilient generation. Use queued jobs, retries, per-shot regeneration and clear job states.
-6. Safety and rights. Add content checks, consent safeguards for real-person likeness/voice, and asset licensing records.
-7. No impossible guarantees. AI output can contain artifacts; the system should detect, report and offer repairs rather than promise zero mistakes.
+To activate it, add `GEMINI_API_KEY` as a Supabase Edge Function secret for this project. The key must never be added to `public/index.html`, GitHub source, or browser storage. The gateway returns a clear provider-not-configured response until the secret exists. No paid provider is called automatically.
 
-## Planned architecture
-
-- Web client: production workspace, storyboard, character bible, media library, timeline and export controls.
-- Application API: authentication, projects, prompts, scene plans, job submission and provider capability/cost checks.
-- Database: users, projects, characters, scenes, jobs, assets, provider configuration and audit events.
-- Object storage: source uploads, generated images/video/audio, previews and exports.
-- Background workers: generation orchestration, polling, retries, FFmpeg assembly and quality checks.
-- Provider adapters: text planning, image generation, video generation, speech, music and optional lip-sync.
-
-## Development sequence
-
-1. Production workspace and typed project/scene data model.
-2. Authentication, cloud persistence and private storage.
-3. Story planner and editable storyboard.
-4. Character/world reference continuity.
-5. Provider adapter interface and free/local provider options.
-6. Queue workers, asset lifecycle and shot-level retries.
-7. Voice, dialogue, subtitles, music and sound effects.
-8. Timeline assembly, rendering and export presets.
-9. Safety, rights, cost controls, observability and end-to-end tests.
+## Important limits
+A static Render frontend is not a GPU video-rendering service. The cloud renderer and video-generation providers still need to be integrated and hosted. Free hosting does not imply unlimited free GPU inference; video providers commonly charge per second or by credits. The app must block paid jobs unless the owner has enabled that provider and approved its spend.
 
 ## Deployment
-
-The initial frontend is hosted as a Render static site and deploys from the `main` branch. The static site does not yet provide a backend API or database.
+- GitHub: https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO
+- Branch: `main`
+- Frontend: https://universal-chatgpt-ai-studio.onrender.com
+- Supabase Edge Function: `studio-gateway`
