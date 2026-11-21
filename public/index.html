@@ -556,6 +556,7 @@ function renderWorldObjects(){
 window.__worldStudio={
  objects:worldObjects,
  get projectId(){return currentPlan?.project_id||null;},
+ get supabase(){return sb;},
  manifest(){return {world_type:$('worldMode').value,location:$('worldLocation').value,weather:$('worldWeather').value,objects:worldObjects.map(x=>({...x}))};},
  renderList:renderWorldObjects,
  setScene(data){const scene=data||{};$('worldMode').value=scene.world_type||'Realistic 3D location';$('worldLocation').value=scene.location||'';$('worldWeather').value=scene.weather||'Sunny · Day';worldObjects.splice(0,worldObjects.length,...(Array.isArray(scene.objects)?scene.objects.slice(0,100).map(x=>({...x})):[]));selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));},
@@ -563,6 +564,13 @@ window.__worldStudio={
  removeSelected(){const index=worldObjects.findIndex(x=>x.id===selectedWorldObjectId);if(index>=0){worldObjects.splice(index,1);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}},
  clear(){worldObjects.splice(0,worldObjects.length);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}
 };
+window.__worldStudioSave=async()=>{
+ const projectId=currentPlan?.project_id;if(!projectId)return false;
+ const state=window.__worldStudio.manifest();
+ const {error}=await sb.from('world_scenes').upsert({project_id:projectId,world_type:state.world_type,location:state.location,weather:state.weather,scene_data:{objects:state.objects,format:'studio-world-scene-v2'},updated_at:new Date().toISOString()},{onConflict:'project_id'});
+ if(error){$('worldStatus').textContent='3D world cloud save failed: '+error.message;return false;}return true;
+};
+window.__worldStudioRestore=data=>{if(data)window.__worldStudio.setScene(data);};
 $('worldObjectList').addEventListener('click',e=>{const b=e.target.closest('[data-world-id]');if(b)window.__worldStudio.select(b.dataset.worldId);});
 $('addWorldObject').addEventListener('click',()=>{
  const n=worldObjects.length,item={id:crypto.randomUUID(),type:$('worldObjects').value,world:$('worldMode').value,location:$('worldLocation').value.trim(),weather:$('worldWeather').value,x:(n%5-2)*3,z:(Math.floor(n/5)-1)*3,scale:1,rotation:0};
