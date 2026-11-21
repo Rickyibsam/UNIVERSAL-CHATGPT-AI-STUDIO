@@ -70,7 +70,7 @@ export function buildSchematicNbt(objects){
   w.tagList("BlockEntities",10,0);w.tagList("Entities",10,0);w.end();
   return w.finish();
 }
-function parseNbt(buffer){
+export function parseNbt(buffer){
   const view=new DataView(buffer);let p=0;
   const need=n=>{if(p+n>view.byteLength)throw new Error("Schematic NBT is truncated.");};
   const u8=()=>{need(1);return view.getUint8(p++);};
@@ -139,13 +139,14 @@ if(typeof window!=="undefined"&&typeof document!=="undefined"){
   file?.addEventListener("change",async()=>{
     try{
       const selected=file.files?.[0];if(!selected)return;
-      const parsed=await decodeSchematic(selected);
+      const legacy=selected.name.toLowerCase().endsWith(".schematic");
+      const parsed=legacy?await (await import("./legacy-schematic.js")).decodeLegacySchematic(selected):await decodeSchematic(selected);
       if(parsed.blocks.length>500){throw new Error("This scene contains "+parsed.blocks.length+" blocks. Import is limited to 500 blocks for stable free-tier browser rendering.");}
-      if(!confirm("Replace the current scene with "+parsed.blocks.length+" blocks from this Sponge schematic?"))return;
+      if(!confirm("Replace the current scene with "+parsed.blocks.length+" blocks from this "+(legacy?"legacy MCEdit .schematic":"Sponge .schem")+" file?"))return;
       const objects=parsed.blocks.map(b=>({id:crypto.randomUUID(),type:"Minecraft custom block",blockState:b.state,world:"Minecraft voxel world",location:"Imported schematic",weather:"Sunny · Day",x:b.x,y:b.y,z:b.z,scale:1,rotation:0}));
       bridge.setScene({world_type:"Minecraft voxel world",location:"Imported schematic",weather:"Sunny · Day",objects});
       window.dispatchEvent(new Event("studio-world-changed"));
-      if(status)status.textContent="Sponge .schem v2 imported · "+objects.length+" blocks. Save the cloud project to keep this world.";
+      if(status)status.textContent=(legacy?"Legacy MCEdit .schematic":"Sponge .schem v2")+" imported · "+objects.length+" blocks. Save the cloud project to keep this world.";
     }catch(e){if(status)status.textContent="Schematic import failed: "+e.message;}
     finally{file.value="";}
   });
