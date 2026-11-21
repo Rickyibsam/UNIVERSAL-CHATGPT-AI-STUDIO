@@ -10,7 +10,7 @@ for (const [index, source] of scripts.entries()) {
 }
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
 const requiredIds = [
-  'prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
+  'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
   'saveTimelineBtn','exportTimelineBtn','exportSubsBtn','saveVersionBtn',
   'loadVersionsBtn','downloadRenderKitBtn','providerStatus',
@@ -35,6 +35,12 @@ assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle b
 assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
 assert.ok(worker.includes('"status": "succeeded"'), 'worker must use the database success status');
 assert.ok(!/generativelanguage\.googleapis\.com|api\.openai\.com|replicate\.com|fal\.ai/i.test(worker), 'worker must not call third-party hosted generation APIs');
+for (const id of ['templateStudio','worldStudio','importStudio','publishStudio','templateGrid','worldPreview','metadataOutput']) assert.ok(html.includes('id="'+id+'"'), 'creator workspace module exists: '+id);
+assert.ok(html.includes('studio-import-rights-draft'), 'rights record draft is saved in browser session');
+assert.ok(html.includes('renderer_status'), 'world plan export identifies planning-only status');
+for (const id of ['proEditor','editorFiles','editorTimeline','editorSplit','editorDuplicate','editorDelete','editorApplyTiming','editorApplyEffects','editorApplyText','editorUndo','editorRedo','editorExport','editorSave']) assert.ok(html.includes('id="'+id+'"'), 'professional editor control exists: '+id);
+for (const feature of ['universal-studio-edit-v1','Split selected at playhead','Shorts effects & filters','TRANSITION','TRIM IN','Text, captions & stickers','Drag clips between tracks','edit_manifest_only_cloud_render_worker_required']) assert.ok(html.includes(feature), 'editor capability marker exists: '+feature);
+
 assert.ok(!html.includes('127.0.0.1'), 'browser app must not depend on localhost AI services');
 assert.ok(!html.toLowerCase().includes('ollama'), 'local Ollama dependency must be removed');
 assert.ok(!html.toLowerCase().includes('comfyui'), 'local ComfyUI dependency must be removed');
