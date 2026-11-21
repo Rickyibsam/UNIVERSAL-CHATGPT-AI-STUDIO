@@ -112,13 +112,18 @@ async function createTimeline(){
  await ensureTimelineTracks();
  const {data:tracks,error}=await sb.from('timeline_tracks').select('*').eq('project_id',currentPlan.project_id).order('sort_order');
  if(error||!tracks?.length)return;
- const {data:existing}=await sb.from('timeline_clips').select('id').eq('project_id',currentPlan.project_id).limit(1);
- if(existing?.length){$('timelineStatus').textContent='Existing timeline preserved. Use Save timeline edits after adjusting clips.';await loadTimeline();return;}
- const videoTrack=tracks.find(t=>t.track_type==='video');
- const rows=(currentPlan.scenes||[]).map((s,i)=>({project_id:currentPlan.project_id,track_id:videoTrack.id,scene_id:s.id||null,title:s.title||('Scene '+(i+1)),start_seconds:(currentPlan.scenes.slice(0,i).reduce((n,x)=>n+(Number(x.duration_seconds)||5),0)),duration_seconds:Number(s.duration_seconds)||5,sort_order:i,properties:{description:s.description||''}}));
- const {error:clipError}=await sb.from('timeline_clips').insert(rows);
- if(clipError){$('timelineStatus').textContent='Timeline clips failed: '+clipError.message;return;}
- $('timelineStatus').textContent='Timeline created with '+rows.length+' scene clips. Add generated media to the media library and link assets when available.';
+ const {data:existing,error:existingError}=await sb.from('timeline_clips').select('*').eq('project_id',currentPlan.project_id);
+ if(existingError){$('timelineStatus').textContent='Could not inspect existing timeline: '+existingError.message;return;}
+ const videoTrack=tracks.find(t=>t.track_type==='video');if(!videoTrack){$('timelineStatus').textContent='Video track missing.';return;}
+ let start=0,created=0,updated=0;
+ for(let i=0;i<(currentPlan.scenes||[]).length;i++){const s=currentPlan.scenes[i],dur=Number(s.duration_seconds)||5;const old=(existing||[]).find(x=>x.scene_id&&x.scene_id===s.id);
+  if(old){const {error:e}=await sb.from('timeline_clips').update({title:s.title||('Scene '+(i+1)),start_seconds:start,duration_seconds:dur,properties:{...(old.properties||{}),description:s.description||''},updated_at:new Date().toISOString()}).eq('id',old.id);if(e){$('timelineStatus').textContent='Timeline sync failed: '+e.message;return;}updated++;}
+  else{const {error:e}=await sb.from('timeline_clips').insert({project_id:currentPlan.project_id,track_id:videoTrack.id,scene_id:s.id||null,title:s.title||('Scene '+(i+1)),start_seconds:start,duration_seconds:dur,sort_order:i,properties:{description:s.description||''}});if(e){$('timelineStatus').textContent='Timeline clip create failed: '+e.message;return;}created++;}
+  start+=dur;
+ }
+ const validIds=(currentPlan.scenes||[]).map(s=>s.id).filter(Boolean);
+ for(const old of (existing||[])){if(old.scene_id&&!validIds.includes(old.scene_id)){await sb.from('timeline_clips').delete().eq('id',old.id);}}
+ $('timelineStatus').textContent='Timeline synced from screenplay. '+created+' created, '+updated+' refreshed. Existing media links remain on matched scenes.';
  await loadTimeline();
 }
 async function loadTimeline(){
@@ -396,7 +401,7 @@ $('saveBtn').addEventListener('click',async()=>{
  currentPlan.project_id=projectId;
  const charRows=(currentPlan.characters||[]).map(x=>({...x,project_id:projectId}));
  if(charRows.length){const {data:savedChars,error:charError}=await sb.from('characters').upsert(charRows,{onConflict:'id'}).select('id,name');if(charError){setAuthStatus('Project saved, but character save failed: '+charError.message);return;}currentPlan.characters.forEach(ch=>{const found=savedChars?.find(x=>x.name===ch.name);if(found)ch.id=found.id;});}
- const sceneRows=(currentPlan.scenes||[]).map((s,i)=>({...(s.id?{id:s.id}:{}),project_id:projectId,sequence_number:i+1,title:s.title,narrative_beat:s.description,visual_prompt:s.description,camera_direction:{direction:s.camera_direction||'Cinematic'},duration_seconds:Math.max(1,Number(s.duration_seconds)||seconds/Math.max(1,currentPlan.scenes.length)),status:'draft'}));
+ const {data:priorScenes}=await sb.from('scenes').select('id,sequence_number').eq('project_id',projectId).order('sequence_number');currentPlan.scenes.forEach((scene,i)=>{if(!scene.id&&priorScenes?.[i])scene.id=priorScenes[i].id;});\n const sceneRows=(currentPlan.scenes||[]).map((s,i)=>({...(s.id?{id:s.id}:{}),project_id:projectId,sequence_number:i+1,title:s.title,narrative_beat:s.description,visual_prompt:s.description,camera_direction:{direction:s.camera_direction||'Cinematic'},duration_seconds:Math.max(1,Number(s.duration_seconds)||seconds/Math.max(1,currentPlan.scenes.length)),status:'draft'}));
  if(sceneRows.length){const {data:savedScenes,error:sceneError}=await sb.from('scenes').upsert(sceneRows,{onConflict:'id'}).select('id,sequence_number');if(sceneError){setAuthStatus('Project saved, but scene save failed: '+sceneError.message);return;}currentPlan.scenes.forEach((scene,i)=>{const found=savedScenes?.find(x=>x.sequence_number===i+1);if(found)scene.id=found.id;});}
  const {data:oldScenes}=await sb.from('scenes').select('id').eq('project_id',projectId);
  for(const old of (oldScenes||[])){if(!currentPlan.scenes.some(s=>s.id===old.id)){await sb.from('scenes').delete().eq('id',old.id).eq('project_id',projectId);}}
