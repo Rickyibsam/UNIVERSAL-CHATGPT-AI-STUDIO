@@ -258,8 +258,8 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     if fade > 0 or transition in ("fade", "dissolve"):
         fade_duration = min(fade if fade > 0 else 0.5, duration / 2)
         if fade_duration > 0:
-            filters.append(f"fade=t=in:st={start:.5f}:d={fade_duration:.5f}:alpha=1")
-            filters.append(f"fade=t=out:st={max(start, start + duration - fade_duration):.5f}:d={fade_duration:.5f}:alpha=1")
+            filters.append(f"fade=t=in:st=0:d={fade_duration:.5f}:alpha=1")
+            filters.append(f"fade=t=out:st={max(0.0, duration - fade_duration):.5f}:d={fade_duration:.5f}:alpha=1")
     text = str(clip.get("text") or "")
     if text:
         safe_text = ffmpeg_text(text)[:500]
