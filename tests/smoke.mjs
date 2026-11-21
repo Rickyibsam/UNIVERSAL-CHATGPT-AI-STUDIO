@@ -55,6 +55,10 @@ assert.ok(html.includes("from('generation_jobs')"), 'screenplay UI must poll dur
 assert.ok(!/generativelanguage\.googleapis\.com|GEMINI_API_KEY|api\.openai\.com|replicate\.com|fal\.ai/i.test(html), 'browser must not call hosted AI generation APIs');
 assert.ok(worker.includes('claim_studio_jobs'), 'private worker must claim durable jobs');
 assert.ok(worker.includes('STUDIO_ENGINE_URL'), 'private worker must call only the self-hosted engine');
+assert.ok(worker.includes('HF_T2V_SPACE_ID') && worker.includes('run_wan_zero_gpu_video'), 'worker must support the configured Wan2.1 ZeroGPU provider');
+assert.ok(worker.includes('WAN_ZERO_GPU_RETURNED_NO_VIDEO_FILE') && worker.includes('huggingface_zero_gpu'), 'worker must validate and label generated MP4 artifacts');
+assert.ok(rendererApi.includes('in.(render,video)') && rendererApi.includes('VIDEO_PROVIDER_NOT_CONFIGURED'), 'authenticated renderer API must run video generation jobs and fail clearly without a provider');
+assert.ok(html.includes('universal-studio-renderer.onrender.com/jobs/') && html.includes("/run',{method:'POST'"), 'video UI must start the authenticated cloud worker before polling');
 assert.ok(worker.includes('async def render_timeline'), 'private worker must implement cloud MP4 assembly');
 assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle burn-in');
 assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
