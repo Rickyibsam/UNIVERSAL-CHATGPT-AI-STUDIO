@@ -35,5 +35,43 @@ async function load(p){
  quiet=true;api.load(clips);setTimeout(()=>quiet=false,0);say("Cloud timeline restored · "+clips.length+" clips.");
 }
 window.__studioCloudSchedule=queue;window.__studioCloudSave=save;
-document.addEventListener("DOMContentLoaded",()=>{ $("editorSave")?.addEventListener("click",save);window.addEventListener("studio-cloud-project-opened",e=>load(e.detail.projectId));});
+async function renderMp4(){
+ const button=$("editorRender");if(button)button.disabled=true;
+ try{
+  if(!pid())throw Error("Save this production to a cloud project before rendering.");
+  const ok=await save();if(!ok)throw Error("Cloud timeline save did not finish. Resolve the save message and retry.");
+  const api=window.__studioEditor,manifest=api.manifest(),clips=manifest.clips||[];
+  if(!clips.length||clips.some(c=>!c.asset_id))throw Error("Every timeline clip must have uploaded cloud media before rendering.");
+  const ratio=String(manifest.canvas.aspect_ratio||"16 / 9").split("/").map(x=>Number(x.trim()));
+  const resolution=Number($("renderResolution")?.value||1080),fps=30;
+  const w0=ratio[0]||16,h0=ratio[1]||9,scale=resolution/Math.max(w0,h0);
+  const width=Math.max(320,Math.round(w0*scale/2)*2),height=Math.max(240,Math.round(h0*scale/2)*2);
+  const renderClips=clips.map(c=>({asset_id:c.asset_id,track_type:c.kind==="image"?"image":c.track==="overlay"?"overlay":c.track==="audio"||c.track==="sfx"?"audio":c.track==="subtitles"?"subtitle":"video",start_seconds:Number(c.start)||0,trim_in_seconds:Number(c.trimIn)||0,duration_seconds:Math.max(.05,Number(c.trimOut)-Number(c.trimIn)),speed:Number(c.speed)||1,volume:Number(c.volume)||0,filter:c.filter||"none",transition:c.transition||"None",fade:Number(c.fade)||0,fit:c.fit||"contain",rotation:Number(c.rotate)||0,text:c.text||"",text_size:Number(c.textSize)||34,text_position:c.textPosition||"center"}));
+  const {data:{session}}=await sb.auth.getSession();if(!session)throw Error("Sign in before rendering.");
+  const response=await fetch(SUPABASE_URL+"/functions/v1/studio-gateway",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":"Bearer "+session.access_token},body:JSON.stringify({action:"render-video",project_id:pid(),timeline:{width,height,fps,clips:renderClips}})});
+  const queued=await response.json();if(!response.ok)throw Error(queued.message||queued.error||"Could not queue MP4 render.");
+  say("Render queued · "+queued.job_id);
+  let job=null;
+  for(let i=0;i<180;i++){
+   await new Promise(r=>setTimeout(r,2000));
+   const q=await sb.from("generation_jobs").select("status,progress_percent,result_payload,error_message").eq("id",queued.job_id).eq("project_id",pid()).single();
+   if(q.error)throw Error("Render job status unavailable: "+q.error.message);
+   job=q.data;say("Cloud render · "+job.status+" · "+Number(job.progress_percent||0)+"% · "+queued.job_id);
+   if(job.status==="succeeded")break;
+   if(job.status==="failed"||job.status==="cancelled")throw Error(job.error_message||"Render "+job.status);
+  }
+  if(!job||job.status!=="succeeded")throw Error("Render is still queued/running. It has not been marked complete.");
+  const ids=job.result_payload?.output_asset_ids||job.output_asset_ids||[];
+  let assetIds=ids;
+  if(!assetIds.length){const j=await sb.from("generation_jobs").select("output_asset_ids").eq("id",queued.job_id).single();assetIds=j.data?.output_asset_ids||[];}
+  if(!assetIds.length)throw Error("Render completed without an output asset reference.");
+  const ar=await sb.from("assets").select("*").eq("project_id",pid()).in("id",assetIds);if(ar.error)throw ar.error;
+  const video=ar.data.find(a=>a.asset_type==="video"&&a.mime_type==="video/mp4");if(!video)throw Error("Rendered MP4 asset was not found.");
+  const signed=await sb.storage.from("studio-media").createSignedUrl(video.storage_key,3600);if(signed.error)throw signed.error;
+  const a=document.createElement("a");a.href=signed.data.signedUrl;a.download="universal-studio-final.mp4";a.target="_blank";a.rel="noopener";a.click();
+  say("MP4 render complete · "+video.width+"×"+video.height+" · "+Number(video.duration_seconds||0).toFixed(1)+" sec. Download opened.");
+ }catch(e){say("MP4 render not completed: "+(e.message||e));}
+ finally{if(button)button.disabled=false;}
+}
+document.addEventListener("DOMContentLoaded",()=>{ $("editorSave")?.addEventListener("click",save);$("editorRender")?.addEventListener("click",renderMp4);window.addEventListener("studio-cloud-project-opened",e=>load(e.detail.projectId));});
 })();
