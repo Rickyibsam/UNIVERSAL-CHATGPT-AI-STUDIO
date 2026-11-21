@@ -205,6 +205,51 @@ def atempo_filters(speed: float) -> str:
     return ",".join(f"atempo={factor:.5f}" for factor in factors)
 
 
+def keyframe_value_expression(clip: dict[str, Any], field: str, default: float, fps: int, time_var: str) -> str | None:
+    raw = clip.get("keyframes")
+    if not isinstance(raw, list) or not raw:
+        return None
+    points: list[tuple[float, float]] = []
+    for item in raw[:100]:
+        if not isinstance(item, dict):
+            continue
+        try:
+            frame = max(0, min(27000, int(item.get("frame", 0))))
+            value = float(item.get(field, default))
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(value):
+            continue
+        if field == "opacity":
+            value = max(0.0, min(1.0, value))
+        elif field == "scale":
+            value = max(0.5, min(2.0, value / 100.0))
+        points.append((frame / max(1, fps), value))
+    if not points:
+        return None
+    points.sort(key=lambda point: point[0])
+    deduped: list[tuple[float, float]] = []
+    for point in points:
+        if deduped and point[0] == deduped[-1][0]:
+            deduped[-1] = point
+        else:
+            deduped.append(point)
+    if len(deduped) == 1:
+        return f"{deduped[0][1]:.6f}"
+    expression = f"{deduped[-1][1]:.6f}"
+    for index in range(len(deduped) - 2, -1, -1):
+        t0, v0 = deduped[index]
+        t1, v1 = deduped[index + 1]
+        span = max(0.000001, t1 - t0)
+        expression = (
+            f"if(lt({time_var}\\,{t1:.6f})\\,"
+            f"{v0:.6f}+({v1:.6f}-{v0:.6f})*({time_var}-{t0:.6f})/{span:.6f}\\,"
+            f"{expression})"
+        )
+    first_time, first_value = deduped[0]
+    return f"if(lt({time_var}\\,{first_time:.6f})\\,{first_value:.6f}\\,{expression})"
+
+
 def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int, start: float, duration: float) -> str:
     filters: list[str] = []
     rotation = int(clip.get("rotation") or clip.get("rotate") or 0) % 360
@@ -244,6 +289,12 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
         filters.append(mapped)
     speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
     trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
+    opacity_expr = keyframe_value_expression(clip, "opacity", float(clip.get("opacity", 1) or 1), fps, "T")
+    scale_expr = keyframe_value_expression(clip, "scale", float(clip.get("scale", 100) or 100), fps, "t")
+    if scale_expr:
+        filters.append(f"scale=w='iw*({scale_expr})':h='ih*({scale_expr})':eval=frame")
+    if opacity_expr:
+        filters.append(f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*({opacity_expr})'")
     filters.extend([
         "setpts=PTS-STARTPTS",
         f"fps={fps}",
@@ -363,7 +414,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             elif transition == "slide right":
                 overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,-main_w*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
                 overlay_y = "0"
-            elif transition == "zoom":
+            elif transition == "zoom" or any(isinstance(k, dict) and "scale" in k for k in (clip.get("keyframes") or [])):
                 overlay_x = "(main_w-overlay_w)/2"
                 overlay_y = "(main_h-overlay_h)/2"
             else:
