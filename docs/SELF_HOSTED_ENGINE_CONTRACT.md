@@ -85,6 +85,9 @@ One engine endpoint provides a common model interface. Model adapters are select
 ## Worker container
 Build from the repository root with `docker build -f worker/Dockerfile -t studio-worker worker`. Run it as a private background process, not as a public browser endpoint. The current Render service is a static site and is not a GPU worker; do not attach this worker to it or claim generation is live until a separate worker and self-hosted inference engine are actually running.
 
+## Self-hosted engine service
+The FastAPI service and allowlisted adapter registry are in `engine/`. Build its container with `docker build -f engine/Dockerfile -t universal-studio-engine engine`. Run it on the same private network as the worker and set `STUDIO_ENGINE_TOKEN` on both services. The engine exposes authenticated `GET /v1/capabilities` and `POST /v1/generate`. Server operators install adapter modules using `STUDIO_ADAPTER_MODULES`; request bodies cannot supply Python imports, model URLs or shell commands. No adapters are registered by default, so the engine correctly reports `MODEL_NOT_READY` until a model adapter is installed.
+
 ## Deployment secrets
 
 Worker environment variables (server-side only):
