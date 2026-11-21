@@ -124,7 +124,7 @@ async function createTimeline(){
 async function loadTimeline(){
  if(!requireCloudProject())return;
  const {data:tracks,error:te}=await sb.from('timeline_tracks').select('*').eq('project_id',currentPlan.project_id).order('sort_order');
- const {data:clips,error:ce}=await sb.from('timeline_clips').select('*').eq('project_id',currentPlan.project_id).order('start_seconds');
+ const {data:clips,error:ce}=await sb.from('timeline_clips').select('*').eq('project_id',currentPlan.project_id).order('start_seconds');const {data:mediaAssets}=await sb.from('assets').select('id,storage_key,asset_type').eq('project_id',currentPlan.project_id).order('created_at',{ascending:false});window.__studioAssets=mediaAssets||[];
  if(te||ce){$('timelineItems').textContent='Timeline load failed: '+(te||ce).message;return;}
  if(!tracks?.length){$('timelineItems').textContent='No tracks yet. Create a timeline from your scenes.';return;}
  $('timelineItems').innerHTML=tracks.map(t=>'<div class="scene"><div class="sceneNo">♫</div><div><h3>'+escapeHtml(t.name)+' <span class="pill">'+escapeHtml(t.track_type)+'</span></h3>'+(clips||[]).filter(c=>c.track_id===t.id).map(c=>'<div class="fieldgrid" style="margin-top:8px"><div class="field"><label>CLIP</label><input class="clip-title" data-id="'+c.id+'" value="'+escapeHtml(c.title)+'"></div><div class="field"><label>START (SECONDS)</label><input class="clip-start" type="number" min="0" step="0.1" data-id="'+c.id+'" value="'+c.start_seconds+'"></div><div class="field"><label>DURATION (SECONDS)</label><input class="clip-duration" type="number" min="0.1" step="0.1" data-id="'+c.id+'" value="'+c.duration_seconds+'"></div><div class="field"><label>TRIM IN (SECONDS)</label><input class="clip-trim" type="number" min="0" step="0.1" data-id="'+c.id+'" value="'+c.trim_in_seconds+'"></div></div>') .join('')+'</div></div>').join('')||'No timeline tracks.';
@@ -134,9 +134,9 @@ $('createTimelineBtn').addEventListener('click',createTimeline);
 $('saveTimelineBtn').addEventListener('click',async()=>{
  if(!requireCloudProject())return;
  const ids=[...new Set([...document.querySelectorAll('.clip-start,.clip-duration,.clip-trim,.clip-title')].map(x=>x.dataset.id))];
- for(const id of ids){const val=s=>document.querySelector(s+'[data-id="'+id+'"]')?.value;const start=Number(val('.clip-start')),duration=Number(val('.clip-duration')),trim=Number(val('.clip-trim'));
+ for(const id of ids){const val=s=>document.querySelector(s+'[data-id="'+id+'"]')?.value;const start=Number(val('.clip-start')),duration=Number(val('.clip-duration')),trim=Number(val('.clip-trim')),asset=val('.clip-asset');
   if(!Number.isFinite(start)||start<0||!Number.isFinite(duration)||duration<=0||!Number.isFinite(trim)||trim<0){$('timelineStatus').textContent='Invalid clip timing. Start/trim must be non-negative and duration must be positive.';return;}
-  const {error}=await sb.from('timeline_clips').update({title:val('.clip-title'),start_seconds:start,duration_seconds:duration,trim_in_seconds:trim,updated_at:new Date().toISOString()}).eq('id',id);
+  const {error}=await sb.from('timeline_clips').update({title:val('.clip-title'),start_seconds:start,duration_seconds:duration,trim_in_seconds:trim,asset_id:asset||null,updated_at:new Date().toISOString()}).eq('id',id);
   if(error){$('timelineStatus').textContent='Timeline save failed: '+error.message;return;}
  }
  $('timelineStatus').textContent='Timeline edits saved.';await loadTimeline();
@@ -181,8 +181,8 @@ async function loadVersions(){
  }));
 }
 $('loadVersionsBtn').addEventListener('click',loadVersions);
-$('saveProviderSettingsBtn').addEventListener('click',()=>{localStorage.setItem('ucas-provider-settings',JSON.stringify({comfy:$('comfyEndpoint').value.trim(),ollama:$('ollamaEndpoint').value.trim()}));$('providerStatus').textContent='Local endpoints saved in this browser only. No external generation request was made.';});
-(function restoreProviderSettings(){try{const s=JSON.parse(localStorage.getItem('ucas-provider-settings')||'{}');$('comfyEndpoint').value=s.comfy||'';$('ollamaEndpoint').value=s.ollama||'';}catch(e){} })();
+$('saveProviderSettingsBtn').addEventListener('click',()=>{localStorage.setItem('ucas-provider-settings',JSON.stringify({comfy:$('comfyEndpoint').value.trim(),ollama:$('ollamaEndpoint').value.trim(),workflow:$('comfyWorkflow').value,model:$('ollamaModel').value}));$('ollamaStoryEndpoint').value=$('ollamaEndpoint').value.trim();$('providerStatus').textContent='Local endpoints saved in this browser only. No external generation request was made.';});
+(function restoreProviderSettings(){try{const s=JSON.parse(localStorage.getItem('ucas-provider-settings')||'{}');$('comfyEndpoint').value=s.comfy||'';$('ollamaEndpoint').value=s.ollama||'';$('ollamaStoryEndpoint').value=s.ollama||'';$('comfyWorkflow').value=s.workflow||'';$('ollamaModel').value=s.model||'qwen2.5:3b';}catch(e){} })();
 async function testEndpoint(url,path,label){
  if(!url){$('providerStatus').textContent='Enter '+label+' URL first.';return;}
  try{const res=await fetch(url.replace(/\\/$/,'')+path,{method:'GET'});if(!res.ok)throw new Error('HTTP '+res.status);const data=await res.json();$('providerStatus').textContent=label+' connected. Response received; generation workflows still need model-specific setup.';}
@@ -218,7 +218,7 @@ $('realAiStoryBtn').addEventListener('click',async()=>{
  }catch(e){$('storyOutput').textContent='Local AI generation failed: '+e.message+'. Check Ollama is running, model is installed, and CORS allows this website origin.';}
 });
 async function runComfyWorkflow(){
- const base=$('comfyEndpoint').value.trim().replace(/\\/$/,'');const raw=$('comfyWorkflow').value.trim();const prompt=$('generationPrompt').value.trim()||(currentPlan?.scenes?.[0]?.description||$('prompt').value.trim());
+ const base=$('comfyEndpoint').value.trim().replace(/\\/$/,'');const raw=$('comfyWorkflow').value.trim();const basePrompt=$('generationPrompt').value.trim()||(currentPlan?.scenes?.[0]?.description||$('prompt').value.trim());const continuity=(currentPlan?.characters||[]).map(ch=>'CHARACTER '+ch.name+': '+ch.description+' CONTINUITY: '+(ch.continuity_notes||'')).join('\\n');const prompt=[basePrompt,currentPlan?.setting?'WORLD CONTINUITY: '+currentPlan.setting:'',continuity].filter(Boolean).join('\\n\\n');
  if(!base||!raw||!prompt){$('providerStatus').textContent='Enter ComfyUI URL, API workflow JSON and a prompt.';return;}
  let workflow;try{workflow=JSON.parse(raw)}catch(e){$('providerStatus').textContent='Workflow JSON is invalid: '+e.message;return;}
  const seed=Math.floor(Math.random()*2147483647),duration=Number(currentPlan?.duration_seconds||60);
