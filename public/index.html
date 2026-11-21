@@ -429,11 +429,13 @@ $('downloadRenderKitBtn').addEventListener('click',async()=>{
  ps.push('Write-Host "Downloading project media. Signed links expire in about one hour."');
  inputDefs.forEach(x=>{ps.push('Invoke-WebRequest -Uri '+psQuote(x.url)+' -OutFile (Join-Path $workDir '+psQuote(x.localName));});
  ps.push("[System.IO.File]::WriteAllText((Join-Path $workDir 'subtitles.srt'), "+psQuote(srt)+", [System.Text.UTF8Encoding]::new($false))");
- ps.push('$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue; if (-not $ffmpeg) { throw "FFmpeg is not installed or not on PATH. Install FFmpeg and reopen PowerShell." }');\n ps.push('$oldLocation = Get-Location; Set-Location $workDir');
+ ps.push('$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue; if (-not $ffmpeg) { throw "FFmpeg is not installed or not on PATH. Install FFmpeg and reopen PowerShell." }');
+ ps.push('$oldLocation = Get-Location; Set-Location $workDir');
  ps.push('$argsList = @('+args.join(',')+", '-filter_complex', "+psQuote(filter)+", '-map', '[vout]'"+(audioInput.length?", '-map', '[aout]'":", '-an")+", '-t', "+psQuote(String(total))+", '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p'"+(audioInput.length?", '-c:a', 'aac', '-b:a', '192k'":"")+", (Join-Path $workDir 'final_video.mp4'))");
  ps.push('& ffmpeg @argsList');
  ps.push('if ($LASTEXITCODE -ne 0) { throw "FFmpeg render failed with exit code $LASTEXITCODE" }');
- ps.push('Write-Host "Render complete: $workDir\\final_video.mp4"');\n ps.push('Set-Location $oldLocation');
+ ps.push('Write-Host "Render complete: $workDir\\final_video.mp4"');
+ ps.push('Set-Location $oldLocation');
  const script=ps.join('\n');
  downloadText(script,'render-studio-project.ps1','text/plain;charset=utf-8');
  $('timelineStatus').textContent='Local MP4 render kit downloaded. Run it on Windows with FFmpeg installed. Private media links expire in about one hour. Review output and audio sync before publishing.';
