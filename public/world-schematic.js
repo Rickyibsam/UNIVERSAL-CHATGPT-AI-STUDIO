@@ -131,8 +131,27 @@ function download(blob,name){
 if(typeof window!=="undefined"&&typeof document!=="undefined"){
   const status=document.getElementById("worldSchematicStatus");
   if(file)file.accept=".schem,.schematic,.litematic,application/octet-stream";
-  if(status)status.textContent="Minecraft .schem, legacy .schematic and Litematica .litematic import supported · up to 500 blocks.";
+  if(status)status.textContent="Minecraft .schem export/import, legacy .schematic import and Litematica .litematic import/export supported · up to 500 scene blocks.";
   const bridge=window.__worldStudio;
+  const schemExportButton=document.getElementById("exportWorldSchem");
+  if(schemExportButton&&!document.getElementById("exportWorldLitematic")){
+    const litematicButton=document.createElement("button");
+    litematicButton.id="exportWorldLitematic";
+    litematicButton.className="btn secondary";
+    litematicButton.type="button";
+    litematicButton.textContent="Export Minecraft .litematic";
+    schemExportButton.insertAdjacentElement("afterend",litematicButton);
+    litematicButton.addEventListener("click",async()=>{
+      try{
+        const {encodeLitematic}=await import("./litematic-schematic.js");
+        const blob=await encodeLitematic(bridge?.objects||[]);
+        const url=URL.createObjectURL(blob),a=document.createElement("a");
+        a.href=url;a.download="studio-world.litematic";a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1500);
+        if(status)status.textContent="Litematica .litematic exported · block states, palette and region coordinates included.";
+      }catch(e){if(status)status.textContent="Litematic export failed: "+e.message;}
+    });
+  }
   const file=document.getElementById("importWorldSchem");
   document.getElementById("exportWorldSchem")?.addEventListener("click",async()=>{
     try{const blob=await encodeSchematic(bridge?.objects||[]);download(blob,"studio-world.schem");if(status)status.textContent="Sponge .schem v2 exported · blocks and supported Minecraft structures included.";}
