@@ -12,7 +12,7 @@ const requiredIds = [
   'prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
   'saveTimelineBtn','exportTimelineBtn','exportSubsBtn','saveVersionBtn',
-  'loadVersionsBtn','comfyWorkflow','runComfyJobBtn','checkComfyQueueBtn','downloadRenderKitBtn',
+  'loadVersionsBtn','comfyWorkflow','runComfyJobBtn','checkComfyQueueBtn','downloadRenderKitBtn','referenceAsset','providerStatus',
   'authEmail','authPassword','signInBtn','signUpBtn','saveBtn'
 ];
 for (const id of requiredIds) {
