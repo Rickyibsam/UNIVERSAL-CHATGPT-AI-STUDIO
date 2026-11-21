@@ -58,7 +58,7 @@ async function loadManifest(manifest){
     chromaKey:c.chromaKey||"off",chromaSimilarity:Number(c.chromaSimilarity)||.25,chromaBlend:Number(c.chromaBlend)||.1});
   }
   quiet=true;api.load(clips);if(manifest.canvas?.aspect_ratio)$("editorAspect").value=manifest.canvas.aspect_ratio;
-  if(manifest.canvas?.frame_rate)$("editorFps").value=String(manifest.canvas.frame_rate);
+  if(manifest.canvas?.frame_rate)api.setFrameRate?.(manifest.canvas.frame_rate);
   setTimeout(()=>{quiet=false;},0);say("Recovery snapshot restored · "+clips.length+" cloud media clip(s). Save the editor timeline to persist this restored version.");return true;
  }catch(e){say("Editor recovery restore failed: "+(e.message||e));return false;}
 }
