@@ -38,7 +38,8 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [x] Expired worker leases are recovered by the atomic claim function; after 45 minutes stale jobs are re-queued within attempt limits or marked failed.
 - [ ] Self-hosted voice/TTS model adapter and private WAV ingestion; lip-sync remains out of scope.
 - [ ] Self-hosted music/SFX model adapters with license review; no third-party hosted generation APIs.
-- [ ] Hosted timeline renderer for MP4 export; browser-side local FFmpeg is not part of the target architecture.
+- [x] Private worker MP4 renderer implemented: ordered visual clips, voice/music/SFX mix, subtitle burn-in and private MP4/SRT ingestion. **Not deployed or runtime-tested yet**.
+- [ ] Advanced timeline renderer: true multi-track positioning, transitions, overlays and effects.
 - [ ] Automated media QC, continuity checks, recovery tests and end-to-end workflow tests.
 
 ## Self-hosted AI runtime
