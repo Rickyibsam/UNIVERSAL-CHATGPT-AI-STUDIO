@@ -258,7 +258,7 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     elif transition == "wipe":
         progress = "min(1\\,max(0\\,t/0.5))"
         filters.append(
-            f"crop=w='max(1\\,iw*{progress})':h=ih:x=0:y=0:eval=frame,"
+            f"scale=w='max(1\\,iw*{progress})':h=ih:eval=frame,"
             f"pad={width}:{height}:0:0:color=black@0"
         )
     if fade > 0 or transition in ("fade", "dissolve"):
