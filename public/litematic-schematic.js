@@ -102,12 +102,12 @@ export function decodeLitematicRoot(root) {
   }
   const all = decoded.flatMap(region => region.blocks);
   if (!all.length) throw new Error("This litematic contains no non-air blocks to import.");
-  const minX = Math.min(...all.map(b => b.x));
-  const minY = Math.min(...all.map(b => b.y));
-  const minZ = Math.min(...all.map(b => b.z));
-  const maxX = Math.max(...all.map(b => b.x));
-  const maxY = Math.max(...all.map(b => b.y));
-  const maxZ = Math.max(...all.map(b => b.z));
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (const b of all) {
+    minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); minZ = Math.min(minZ, b.z);
+    maxX = Math.max(maxX, b.x); maxY = Math.max(maxY, b.y); maxZ = Math.max(maxZ, b.z);
+  }
   const width = maxX - minX + 1, height = maxY - minY + 1, length = maxZ - minZ + 1;
   if (width > MAX_DIMENSION || height > MAX_DIMENSION || length > MAX_DIMENSION || width * height * length > MAX_CELLS) {
     throw new Error("Combined litematic regions exceed the safe 128×128×128 import bounds.");
