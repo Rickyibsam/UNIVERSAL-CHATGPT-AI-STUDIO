@@ -12,9 +12,9 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 ## Cloud-first rules
 1. Never require Ollama, ComfyUI, local GPU models, PowerShell or local FFmpeg from the user.
 2. Never expose provider API keys in browser code or local storage.
-3. Do not use another company's hosted free-tier AI generation API. Run open-weight models on owner-controlled cloud compute only.
-4. Paid provider calls must remain disabled until the owner explicitly approves the provider and spending.
-5. Show provider, model, estimated cost, duration/resolution limits and account quota before paid generation.
+3. Do not call any third-party hosted AI generation API, free or paid. Run open-weight models on owner-controlled cloud compute only.
+4. Do not rent paid GPU infrastructure or activate paid services without explicit owner approval.
+5. Show the selected self-hosted model, license, hardware needs and output limits before generation.
 6. Use asynchronous jobs, progress, retry, cancellation, idempotency and private asset storage.
 7. Lip-sync is intentionally out of scope for the current build.
 8. Do not claim a generation or export is complete until a real output has been generated and verified.
@@ -47,7 +47,7 @@ The application does not use third-party hosted free-tier or paid generation API
 The worker container is in `worker/`. It requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STUDIO_ENGINE_URL` and optionally `STUDIO_ENGINE_TOKEN` as server-side environment variables. Never put secrets in the browser, repository, or chat. The self-hosted inference engine and GPU worker are not deployed yet, so AI generation is not yet live.
 
 ## Important limits
-A static Render frontend is not a GPU video-rendering service. The cloud renderer and video-generation providers still need to be integrated and hosted. Free hosting does not imply unlimited free GPU inference; video providers commonly charge per second or by credits. The app must block paid jobs unless the owner has enabled that provider and approved its spend.
+A static Render frontend is not a GPU video-rendering service. The self-hosted inference engine, cloud renderer and GPU worker still need to be integrated and hosted. Free hosting does not provide GPU inference capacity. The project must not start paid compute without explicit approval.
 
 ## Deployment
 - GitHub: https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO
