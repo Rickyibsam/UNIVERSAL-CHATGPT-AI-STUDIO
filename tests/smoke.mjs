@@ -10,6 +10,7 @@ for (const [index, source] of scripts.entries()) {
   new vm.Script(source, { filename: `inline-script-${index}.js` });
 }
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
+const wanSpace = readFileSync(new URL('../hf-space-wan21/app.py', import.meta.url), 'utf8');
 const rendererSmoke = readFileSync(new URL('./renderer_smoke.py', import.meta.url), 'utf8');
 assert.ok(rendererSmoke.includes('4k-zoom') && rendererSmoke.includes('1080p-slide-chroma'), 'real 1080p and 4K FFmpeg render tests exist');
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
@@ -32,7 +33,7 @@ const requiredIds = [
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
   'saveTimelineBtn','exportTimelineBtn','exportSubsBtn','saveVersionBtn',
   'loadVersionsBtn','downloadRenderKitBtn','providerStatus',
-  'authEmail','authPassword','signInBtn','signUpBtn','saveBtn','audioStudio','previewNarrationBtn','generateAudioBtn'
+  'authEmail','authPassword','signInBtn','signUpBtn','saveBtn','audioStudio','previewNarrationBtn','generateAudioBtn','generateVideoBtn'
 ];
 for (const id of requiredIds) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `required UI control exists: ${id}`);
@@ -54,6 +55,8 @@ assert.ok(html.includes('/functions/v1/studio-gateway'), 'screenplay generation 
 assert.ok(html.includes("from('generation_jobs')"), 'screenplay UI must poll durable job progress');
 assert.ok(!/generativelanguage\.googleapis\.com|GEMINI_API_KEY|api\.openai\.com|replicate\.com|fal\.ai/i.test(html), 'browser must not call hosted AI generation APIs');
 assert.ok(worker.includes('claim_studio_jobs'), 'private worker must claim durable jobs');
+assert.ok(wanSpace.includes('Wan-AI/Wan2.1-T2V-1.3B-Diffusers') && wanSpace.includes('@spaces.GPU(duration=300)'), 'Wan2.1 ZeroGPU Space must load the real video model on shared cloud GPU');
+assert.ok(wanSpace.includes('num_frames=81') && wanSpace.includes('api_name="generate"'), 'Wan2.1 Space must expose a real 5-second Gradio video endpoint');
 assert.ok(worker.includes('STUDIO_ENGINE_URL'), 'private worker must call only the self-hosted engine');
 assert.ok(worker.includes('HF_T2V_SPACE_ID') && worker.includes('run_wan_zero_gpu_video'), 'worker must support the configured Wan2.1 ZeroGPU provider');
 assert.ok(worker.includes('WAN_ZERO_GPU_RETURNED_NO_VIDEO_FILE') && worker.includes('huggingface_zero_gpu'), 'worker must validate and label generated MP4 artifacts');
