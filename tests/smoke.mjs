@@ -79,6 +79,7 @@ assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTra
 assert.ok(html.includes('isBlock?(n%16)-8') && html.includes('Math.round(Number(patch.x)||0)'), 'Minecraft blocks must use integer one-unit voxel coordinates');
 assert.ok(worldEditor.includes('OrbitControls') && worldEditor.includes('GLTFExporter') && worldEditor.includes('world_scenes'), '3D editor supports orbit controls, GLB export and cloud storage');
 assert.ok(html.includes('exportWorldSchem') && html.includes('importWorldSchem') && worldSchematic.includes('BlockData') && worldSchematic.includes('decodeLitematic'), 'Minecraft Sponge schematic import/export controls and NBT support exist');
+assert.ok(worldSchematic.includes('exportWorldLitematic') && litematicSchematic.includes('buildLitematicNbt') && litematicSchematic.includes('encodeLitematic'), 'Litematica export control, NBT encoder and GZIP export exist');
 assert.ok(worldSchematic.includes('decodeLegacySchematic') && worldSchematic.includes('.litematic'), 'legacy MCEdit .schematic import is exposed');
 assert.ok(worldMigration.includes('world_scenes_select_owner') && worldMigration.includes('auth.uid()'), 'world scene data is protected by project-owner RLS');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
