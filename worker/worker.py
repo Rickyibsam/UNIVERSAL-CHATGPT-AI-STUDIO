@@ -32,6 +32,8 @@ SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ENGINE_URL = os.getenv("STUDIO_ENGINE_URL", "").rstrip("/")
 ENGINE_TOKEN = os.getenv("STUDIO_ENGINE_TOKEN", "")
+HF_T2V_SPACE_ID = os.getenv("HF_T2V_SPACE_ID", "").strip()
+HF_TOKEN = os.getenv("HF_TOKEN", "").strip()
 BUCKET = os.getenv("STUDIO_STORAGE_BUCKET", "studio-media")
 WORKER_ID = os.getenv("WORKER_ID", f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}")
 POLL_SECONDS = max(2, int(os.getenv("POLL_SECONDS", "5")))
@@ -176,7 +178,7 @@ async def upload_file_artifact(
         "duration_seconds": (metadata or {}).get("duration_seconds"),
         "width": (metadata or {}).get("width"),
         "height": (metadata or {}).get("height"),
-        "source_provider": "self_hosted",
+        "source_provider": (metadata or {}).get("source_provider", "self_hosted"),
         "license_metadata": (metadata or {}).get("license_metadata", {"renderer": "ffmpeg"}),
     }
     await request(client, "POST", "/rest/v1/assets", json=row, headers={**headers, "Prefer": "return=minimal"})
@@ -567,6 +569,93 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         }
 
 
+
+def _find_gradio_video_path(value: Any) -> Path | None:
+    """Extract a locally downloaded Gradio Video output; never fetch arbitrary URLs."""
+    if isinstance(value, str):
+        candidate = Path(value)
+        if candidate.is_file() and candidate.suffix.lower() in {".mp4", ".webm", ".mov"}:
+            return candidate
+        return None
+    if isinstance(value, dict):
+        for key in ("path", "video", "name"):
+            if key in value:
+                found = _find_gradio_video_path(value[key])
+                if found:
+                    return found
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            found = _find_gradio_video_path(item)
+            if found:
+                return found
+    return None
+
+
+def _call_wan_zero_gpu(prompt: str, negative_prompt: str, seed: int, guidance: float, steps: int) -> Path:
+    if not HF_T2V_SPACE_ID:
+        raise PermanentJobError("WAN_ZERO_GPU_SPACE_NOT_CONFIGURED")
+    try:
+        from gradio_client import Client
+        client = Client(HF_T2V_SPACE_ID, hf_token=HF_TOKEN or None, verbose=False)
+        result = client.predict(
+            prompt[:6000], negative_prompt[:1500], int(seed),
+            float(guidance), int(steps), api_name="/generate",
+        )
+    except Exception as exc:
+        message = str(exc).lower()
+        if any(term in message for term in ("quota", "exceeded", "rate limit", "gpu")):
+            raise RetryableJobError("WAN_ZERO_GPU_QUOTA_OR_CAPACITY: " + str(exc)[:300]) from exc
+        raise RetryableJobError("WAN_ZERO_GPU_REQUEST_FAILED: " + str(exc)[:300]) from exc
+    path = _find_gradio_video_path(result)
+    if not path or not path.exists() or path.stat().st_size < 1024:
+        raise PermanentJobError("WAN_ZERO_GPU_RETURNED_NO_VIDEO_FILE")
+    return path
+
+
+async def run_wan_zero_gpu_video(job: dict[str, Any], output_dir: Path) -> tuple[Path, dict[str, Any]]:
+    params = job.get("input_parameters") or {}
+    settings = params.get("settings") if isinstance(params.get("settings"), dict) else {}
+    prompt = str(params.get("prompt") or "").strip()
+    if not prompt:
+        raise PermanentJobError("VIDEO_PROMPT_REQUIRED")
+    style = str(settings.get("style") or "").strip()
+    setting = str(settings.get("setting") or "").strip()
+    characters = settings.get("characters") if isinstance(settings.get("characters"), list) else []
+    character_notes = [str(x.get("description") or x.get("name") or "") for x in characters if isinstance(x, dict)]
+    scene_notes = []
+    for scene in settings.get("scenes", []) if isinstance(settings.get("scenes"), list) else []:
+        if isinstance(scene, dict):
+            note = str(scene.get("visual_prompt") or scene.get("title") or "").strip()
+            if note:
+                scene_notes.append(note)
+    enriched = "\n".join(x for x in [
+        prompt,
+        ("Visual style: " + style) if style else "",
+        ("Setting: " + setting) if setting else "",
+        ("Character continuity: " + "; ".join(character_notes[:8])) if character_notes else "",
+        ("Scene direction: " + "; ".join(scene_notes[:8])) if scene_notes else "",
+    ] if x)
+    negative = str(settings.get("negative_prompt") or "low quality, blurry, flicker, distorted anatomy, duplicate subjects, text, watermark")
+    seed = int.from_bytes(job["id"].encode("utf-8")[:4].ljust(4, b"0"), "big") % 2147483647
+    guidance = max(1.0, min(10.0, float(settings.get("guidance_scale") or 5.0)))
+    steps = max(8, min(30, int(settings.get("num_inference_steps") or 20)))
+    source = await asyncio.to_thread(_call_wan_zero_gpu, enriched, negative, seed, guidance, steps)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    target = output_dir / "wan21-generated.mp4"
+    await asyncio.to_thread(target.write_bytes, source.read_bytes())
+    return target, {
+        "duration_seconds": 81 / 15,
+        "width": 832,
+        "height": 480,
+        "source_provider": "huggingface_zero_gpu",
+        "license_metadata": {
+            "model": "Wan-AI/Wan2.1-T2V-1.3B-Diffusers",
+            "license": "Apache-2.0",
+            "provider": "Hugging Face Spaces ZeroGPU"
+        }
+    }
+
+
 async def run_engine(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str, Any]:
     if not ENGINE_URL:
         raise RetryableJobError("SELF_HOSTED_ENGINE_NOT_CONFIGURED")
@@ -608,12 +697,26 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     job_id = job["id"]
     try:
         await patch_job(client, job_id, {"status": "running", "progress_percent": 5, "heartbeat_at": utc_now()})
-        result = await render_timeline(client, job) if job.get("job_type") == "render" else await run_engine(client, job)
-        ids: list[str] = list(result.get("uploaded_asset_ids") or [])
+        ids: list[str] = []
+        if job.get("job_type") == "render":
+            result = await render_timeline(client, job)
+        elif job.get("job_type") == "video" and HF_T2V_SPACE_ID:
+            with tempfile.TemporaryDirectory(prefix="studio-wan-") as temp_dir:
+                video_path, video_meta = await run_wan_zero_gpu_video(job, Path(temp_dir))
+                ids.append(await upload_file_artifact(
+                    client, job, video_path, "wan21-generated.mp4", "video/mp4", "video", video_meta
+                ))
+            result = {
+                "result_payload": {"model": "Wan2.1-T2V-1.3B", "duration_seconds": video_meta["duration_seconds"], "resolution": "832x480"},
+                "metadata": {"provider": "huggingface_zero_gpu", "model": "Wan-AI/Wan2.1-T2V-1.3B-Diffusers", "license": "Apache-2.0"}
+            }
+        else:
+            result = await run_engine(client, job)
+        ids.extend(list(result.get("uploaded_asset_ids") or []))
         artifacts = result.get("artifacts") or []
         for index, artifact in enumerate(artifacts):
             ids.append(await upload_artifact(client, job, artifact))
-            progress = 10 + int(80 * (index + 1) / len(artifacts))
+            progress = 10 + int(80 * (index + 1) / max(1, len(artifacts)))
             await patch_job(client, job_id, {
                 "progress_percent": progress,
                 "heartbeat_at": utc_now(),
