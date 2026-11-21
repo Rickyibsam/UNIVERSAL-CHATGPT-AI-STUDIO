@@ -50,7 +50,7 @@ The application does not use third-party hosted free-tier or paid generation API
 The separate polling worker and self-hosted inference engine are not deployed. The engine registry in `engine/` currently has no model adapters, and `STUDIO_ENGINE_URL` is not configured on the renderer. Therefore real AI screenplay, image, video, speech, music and SFX generation is not live yet. A model adapter must be installed on owner-controlled cloud compute with an approved model license before those features can be marked complete.
 
 ## Important limits
-A static Render frontend is not a GPU video-rendering service. The self-hosted inference engine, cloud renderer and GPU worker still need to be integrated and hosted. Free hosting does not provide GPU inference capacity. The project must not start paid compute without explicit approval.
+The static frontend is not a GPU inference service. A separate FFmpeg render web service is deployed on Render's free tier, but free hosting does not provide GPU inference capacity and may impose memory/sleep limits on long or 4K jobs. The self-hosted AI inference engine and its model adapters are not deployed. The project must not start paid compute without explicit approval.
 
 ## Deployment
 - GitHub: https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO
