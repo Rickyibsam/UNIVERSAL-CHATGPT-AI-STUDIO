@@ -11,7 +11,7 @@ The worker sends `POST /v1/generate` with:
   "contract_version": "1",
   "job": {
     "id": "uuid",
-    "type": "image | video | voice | music | sfx | render",
+    "type": "script | image | video | speech | music | sfx | render",
     "scene_id": "uuid-or-null",
     "attempt": 1,
     "input": {}
@@ -41,17 +41,19 @@ The engine returns JSON:
       "license_metadata": {"model": "model-id", "license": "license-id"}
     }
   ],
+  "result_payload": {},
   "metadata": {"engine": "self-hosted", "model": "model-id"}
 }
 ```
 
-The worker stores returned files in the private `studio-media` bucket, inserts rows in `assets`, and completes the generation job with asset IDs. The engine must enforce output limits and must not return arbitrary URLs for the worker to fetch.
+The worker stores returned files in the private `studio-media` bucket, inserts rows in `assets`, stores structured screenplay data in `generation_jobs.result_payload`, and completes the generation job with asset IDs. The engine must enforce output limits and must not return arbitrary URLs for the worker to fetch.
 
 ## Supported job families
 
+- `script`: structured screenplay JSON in `result_payload` (no binary artifact required).
 - `image`: text-to-image / reference-guided image generation.
 - `video`: text/image-to-video, with character and location references supplied in context.
-- `voice`: speech generation; lip-sync is intentionally out of scope.
+- `speech`: speech generation; lip-sync is intentionally out of scope.
 - `music` / `sfx`: soundtrack and effects.
 - `render`: final assembly, subtitles, audio mixing and MP4.
 
