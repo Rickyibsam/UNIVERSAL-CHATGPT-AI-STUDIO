@@ -155,15 +155,17 @@ class LitematicWriter {
 }
 
 function paletteParts(state){
-  const match=String(state).match(/^([^[]+)(?:\\[([^\\]]*)\\])?$/);
-  if(!match)throw new Error("Unsupported Minecraft block state: "+state);
+  const value=String(state),open=value.indexOf("[");
+  const name=open<0?value:value.slice(0,open);
+  if(!name.includes(":")||(open>=0&&!value.endsWith("]")))throw new Error("Unsupported Minecraft block state: "+state);
   const properties={};
-  if(match[2])for(const part of match[2].split(",")){
+  const body=open<0?"":value.slice(open+1,-1);
+  if(body)for(const part of body.split(",")){
     const at=part.indexOf("=");
     if(at<1)throw new Error("Invalid Minecraft block-state property: "+part);
     properties[part.slice(0,at)]=part.slice(at+1);
   }
-  return {name:match[1],properties};
+  return {name,properties};
 }
 
 function packedLongs(indexes,paletteSize){
