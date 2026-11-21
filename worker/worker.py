@@ -450,7 +450,7 @@ async def run_engine(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str
 async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     job_id = job["id"]
     try:
-        await patch_job(client, job_id, {"progress_percent": 5, "heartbeat_at": utc_now()})
+        await patch_job(client, job_id, {"status": "running", "progress_percent": 5, "heartbeat_at": utc_now()})
         result = await render_timeline(client, job) if job.get("job_type") == "render" else await run_engine(client, job)
         ids: list[str] = []
         artifacts = result.get("artifacts") or []
