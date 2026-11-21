@@ -139,7 +139,7 @@ body.editor-mode .layout>main{height:100%}
 <h2>Professional video editor</h2>
 <p class="desc">Multi-track editing workspace: arrange, trim, split and duplicate clips, apply supported effects and transitions, add titles, audio and keyframes. Save to a cloud project for private media storage and automatic timeline recovery; render the final MP4 through the connected cloud renderer.</p>
 <div class="editor-actions">
-<label class="btn secondary" for="editorFiles">＋ Add media</label><input id="editorFiles" type="file" accept="video/*,image/*,audio/*" multiple hidden>
+<label class="btn secondary" for="editorFiles">＋ Add media</label><input id="editorFiles" type="file" accept="video/*,image/*,audio/*" multiple hidden><button class="btn secondary" id="editorAddSubscribeCard" type="button">＋ Add Subscribe end card</button>
 <button class="btn secondary" id="editorPlay">▶ Play preview</button><button class="btn secondary" id="editorPause">Ⅱ Pause</button>
 <button class="btn secondary" id="editorUndo">↶ Undo</button><button class="btn secondary" id="editorRedo">↷ Redo</button>
 <button class="btn" id="editorSave">Save edit project</button><label class="hint" for="editorFps">FPS <select id="editorFps" style="width:auto;padding:7px"><option value="24">24</option><option value="25">25</option><option value="30" selected>30</option><option value="50">50</option><option value="60">60</option></select></label><button class="btn" id="editorRender">Render final MP4</button><button class="btn secondary" id="editorExport">Export edit JSON</button>
@@ -169,7 +169,7 @@ body.editor-mode .layout>main{height:100%}
 <div><label for="editorFade">FADE (sec)</label><input id="editorFade" type="number" min="0" max="10" step=".1" value="0"></div><div><label for="editorFit">FIT / CROP</label><select id="editorFit"><option value="contain">Fit</option><option value="cover">Fill / crop</option></select></div><div><label for="editorRotate">ROTATE</label><select id="editorRotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div><div><label for="editorScale">SCALE %</label><input id="editorScale" type="number" min="50" max="200" value="100"></div><div><label for="editorAnimation">ANIMATION</label><select id="editorAnimation"><option value="none">None</option><option value="fade-in">Fade in</option><option value="zoom-in">Zoom in</option><option value="bounce">Bounce</option><option value="slide-up">Slide up</option></select></div><div><label for="editorOpacity">OPACITY</label><input id="editorOpacity" type="range" min="0" max="1" step="0.05" value="1"></div>
 </div><button class="btn secondary" id="editorApplyEffects" style="margin-top:9px">Apply effect settings</button><div class="actions"><button class="btn secondary" id="editorAddKeyframe">＋ Add keyframe at playhead</button><button class="btn secondary" id="editorClearKeyframes">Clear keyframes</button></div><div class="hint" id="editorKeyframeList">No keyframes on this clip.</div><div class="hint">Filters, crop, rotation, scale, opacity, chroma key and supported transitions are applied to MP4 output. CSS animation presets and stickers remain preview-only.</div></div>
 <div class="editor-tool" id="editorTextPanel"><h3 style="font-size:13px;margin:0 0 9px">Text, captions & stickers</h3><label for="editorTitle">TITLE / CAPTION</label><textarea id="editorTitle" rows="3" placeholder="Add a title or subtitle overlay..." style="min-height:70px"></textarea><div class="editor-tools"><div><label for="editorSticker">STICKER</label><select id="editorSticker"><option value="">None</option><option value="✨">✨ Sparkles</option><option value="🔥">🔥 Fire</option><option value="❤️">❤️ Heart</option><option value="⭐">⭐ Star</option><option value="😂">😂 Laugh</option><option value="🎯">🎯 Target</option><option value="💥">💥 Boom</option></select></div><div><label for="editorTextSize">TEXT SIZE</label><input id="editorTextSize" type="number" min="12" max="100" value="34"></div><div><label for="editorTextPosition">POSITION</label><select id="editorTextPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></div></div><button class="btn secondary" id="editorApplyText" style="margin-top:9px">Apply title / sticker</button>
-<div class="editor-status" id="proEditorStatus">Editor ready. Media stays in this browser until uploaded to your private project library.</div></div>
+<div class="hint">End card: adds a 5-second designed final frame with like/thumbs-up and bell icons, “THANKS FOR WATCHING!” and “PLEASE SUBSCRIBE”. It is a real timeline image and is included in cloud MP4 export after saving.</div><div class="editor-status" id="proEditorStatus">Editor ready. Media stays in this browser until uploaded to your private project library.</div></div>
 </div>
 </div>
 </section>
@@ -670,6 +670,40 @@ function select(id){
  overlay.style.bottom=c.textPosition==='bottom'?'8%':'auto';
  overlay.style.fontSize=(c.textSize||34)+'px';const sticker=stage.querySelector('.editor-sticker');sticker.style.display=c.sticker?'block':'none';
 }
+function makeSubscribeEndCard(){
+ const ratio=$e('editorAspect').value||'16 / 9',parts=ratio.split('/').map(x=>Number(x.trim())||1);
+ const landscape=parts[0]>=parts[1],width=landscape?1920:1080,height=landscape?1080:1920;
+ const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas drawing is unavailable in this browser.');
+ const bg=ctx.createLinearGradient(0,0,width,height);bg.addColorStop(0,'#101b36');bg.addColorStop(.52,'#33235f');bg.addColorStop(1,'#075c69');ctx.fillStyle=bg;ctx.fillRect(0,0,width,height);
+ for(let i=0;i<34;i++){const x=(i*173)%width,y=(i*311)%height;ctx.fillStyle='rgba(255,255,255,'+(.05+(i%4)*.025)+')';ctx.beginPath();ctx.arc(x,y,4+(i%5)*3,0,Math.PI*2);ctx.fill();}
+ const cx=width/2,unit=Math.min(width,height),cardW=width*.82,cardH=height*.62,cardX=(width-cardW)/2,cardY=(height-cardH)/2,r=unit*.045;
+ ctx.fillStyle='rgba(5,10,25,.58)';ctx.beginPath();ctx.roundRect(cardX,cardY,cardW,cardH,r);ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(3,unit*.003);ctx.stroke();
+ const iconY=cardY+cardH*.27,iconR=unit*.09,gap=unit*.24;
+ function badge(x,kind,color){
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,iconY,iconR,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.translate(x,iconY);ctx.scale(iconR/90,iconR/90);ctx.strokeStyle='#fff';ctx.fillStyle='#fff';ctx.lineWidth=12;ctx.lineCap='round';ctx.lineJoin='round';
+  if(kind==='like'){ctx.beginPath();ctx.moveTo(-48,8);ctx.lineTo(-22,8);ctx.lineTo(-3,-32);ctx.quadraticCurveTo(5,-48,17,-38);ctx.lineTo(12,-8);ctx.lineTo(43,-8);ctx.quadraticCurveTo(58,-8,54,9);ctx.lineTo(40,49);ctx.quadraticCurveTo(36,59,23,59);ctx.lineTo(-24,59);ctx.lineTo(-48,43);ctx.closePath();ctx.fill();ctx.strokeRect(-65,5,15,52);}
+  else{ctx.beginPath();ctx.moveTo(-43,33);ctx.quadraticCurveTo(-29,19,-29,-10);ctx.arc(0,-10,29,Math.PI,0);ctx.quadraticCurveTo(29,19,43,33);ctx.lineTo(50,43);ctx.lineTo(-50,43);ctx.closePath();ctx.fill();ctx.beginPath();ctx.arc(0,51,9,0,Math.PI*2);ctx.fill();}
+  ctx.restore();
+ }
+ badge(cx-gap,'like','#2878e7');badge(cx+gap,'bell','#e34f76');
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=18;
+ ctx.font='800 '+Math.round(unit*.066)+'px system-ui, sans-serif';ctx.fillText('THANKS FOR WATCHING!',cx,cardY+cardH*.57,cardW*.9);
+ const pillW=cardW*.62,pillH=unit*.105,pillY=cardY+cardH*.72;ctx.shadowBlur=0;ctx.fillStyle='#ff365e';ctx.beginPath();ctx.roundRect(cx-pillW/2,pillY,pillW,pillH,pillH/2);ctx.fill();
+ ctx.fillStyle='#fff';ctx.font='800 '+Math.round(unit*.052)+'px system-ui, sans-serif';ctx.fillText('PLEASE SUBSCRIBE',cx,pillY+pillH*.52,pillW*.9);
+ ctx.fillStyle='rgba(255,255,255,.78)';ctx.font='500 '+Math.round(unit*.025)+'px system-ui, sans-serif';ctx.fillText('LIKE  •  SHARE  •  SUBSCRIBE',cx,cardY+cardH*.9,cardW*.9);
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Could not create end-card image.')),'image/png'));
+}
+$e('editorAddSubscribeCard').addEventListener('click',async()=>{
+ try{
+  const blob=await makeSubscribeEndCard(),file=new File([blob],'thanks-please-subscribe-end-card.png',{type:'image/png'});
+  const start=state.clips.reduce((m,c)=>Math.max(m,(Number(c.start)||0)+Math.max(.05,(Number(c.trimOut)||0)-(Number(c.trimIn)||0))),0);
+  remember();const clip={id:'clip-'+Date.now()+'-subscribe',name:'Thanks & Subscribe end card',kind:'image',url:URL.createObjectURL(file),file,assetId:null,mime:'image/png',size:file.size,track:'video',start:snapFrame(start),trimIn:0,trimOut:5,frameRate:editorFps(),speed:1,volume:1,filter:'none',transition:'Fade',fade:.5,fit:'contain',rotate:0,scale:100,animation:'fade-in',opacity:1,text:'',textSize:34,textPosition:'center',sticker:''};
+  state.urls.push(clip.url);state.clips.push(clip);state.selected=clip.id;render();select(clip.id);status('5-second Thanks / Please Subscribe end card added at the end of your timeline. Save the edit project, then render final MP4.');
+ }catch(e){status('Could not create subscribe end card: '+(e.message||e));}
+});
 $e('editorFiles').addEventListener('change',ev=>{
  for(const file of ev.target.files){
   const kind=file.type.startsWith('video/')?'video':file.type.startsWith('image/')?'image':file.type.startsWith('audio/')?'audio':null;
