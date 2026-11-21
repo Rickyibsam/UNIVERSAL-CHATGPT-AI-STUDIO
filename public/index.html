@@ -261,6 +261,60 @@ async function pollComfyJob(base,id,type,prompt){
 $('runComfyJobBtn').addEventListener('click',runComfyWorkflow);
 $('checkComfyQueueBtn').addEventListener('click',async()=>{const base=$('comfyEndpoint').value.trim().replace(/\\/$/,'');try{const r=await fetch(base+'/queue');if(!r.ok)throw new Error('HTTP '+r.status);const q=await r.json();$('providerStatus').textContent='ComfyUI queue connected. Running: '+(q.queue_running?.length||0)+' · Pending: '+(q.queue_pending?.length||0);}catch(e){$('providerStatus').textContent='Queue check failed: '+e.message;}});
 
+
+/* Export a local FFmpeg PowerShell render kit for a real MP4 render on the user's PC. */
+function psQuote(s){return "'"+String(s).replace(/'/g,"''")+"'";}
+$('downloadRenderKitBtn').addEventListener('click',async()=>{
+ if(!requireCloudProject())return;
+ const {data:clips,error}=await sb.from('timeline_clips').select('*').eq('project_id',currentPlan.project_id).order('start_seconds');
+ if(error){$('timelineStatus').textContent='Could not load timeline clips: '+error.message;return;}
+ const {data:tracks}=await sb.from('timeline_tracks').select('*').eq('project_id',currentPlan.project_id);
+ const {data:assets}=await sb.from('assets').select('*').eq('project_id',currentPlan.project_id);
+ const trackById=new Map((tracks||[]).map(t=>[t.id,t]));
+ const assetById=new Map((assets||[]).map(a=>[a.id,a]));
+ const videoClips=(clips||[]).filter(c=>['video','image'].includes(trackById.get(c.track_id)?.track_type)&&c.asset_id&&assetById.has(c.asset_id));
+ const audioClips=(clips||[]).filter(c=>['audio','voice','music','sfx'].includes(trackById.get(c.track_id)?.track_type)&&c.asset_id&&assetById.has(c.asset_id));
+ if(!videoClips.length){$('timelineStatus').textContent='Add at least one image/video asset to a Video or Images timeline clip before exporting a render kit.';return;}
+ $('timelineStatus').textContent='Preparing private download links and FFmpeg render script…';
+ const signedByKey=new Map();
+ for(const a of assets||[]){const {data,error}=await sb.storage.from('studio-media').createSignedUrl(a.storage_key,3600);if(!error&&data?.signedUrl)signedByKey.set(a.id,data.signedUrl);}
+ const res=Number($('renderResolution').value)||1080;
+ const dims=currentPlan.format==='9:16'?[Math.round(res*9/16),res]:currentPlan.format==='1:1'?[res,res]:currentPlan.format==='4:3'?[Math.round(res*4/3),res]:[Math.round(res*16/9),res];
+ const width=dims[0]%2?dims[0]-1:dims[0],height=dims[1]%2?dims[1]-1:dims[1];
+ const all=videoClips.concat(audioClips);const inputDefs=[];const videoInput=[];const audioInput=[];
+ for(const clip of all){const asset=assetById.get(clip.asset_id),url=signedByKey.get(asset.id);if(!url){$('timelineStatus').textContent='Could not create a private download link for '+asset.storage_key;return;}const fileName=safeFileName(asset.storage_key.split('/').pop());const localName='asset_'+(inputDefs.length+1)+'_'+fileName;const inputIndex=inputDefs.length+1;inputDefs.push({url,localName,asset,clip});if(videoClips.includes(clip))videoInput.push({clip,asset,localName,inputIndex});else audioInput.push({clip,asset,localName,inputIndex});}
+ const total=Math.max(1,...videoInput.map(x=>Number(x.clip.start_seconds)+Number(x.clip.duration_seconds)));
+ const args=[];
+ args.push("'-y'","'-f'","'lavfi'","'-i'","'color=c=black:s="+width+"x"+height+":r=30:d="+(total+1)+"'");
+ for(const x of videoInput){if(x.asset.asset_type==='image')args.push("'-loop'","'1'","'-t'",psQuote(String(x.clip.duration_seconds)),"'-i'","$workDir + "+psQuote(x.localName));else args.push("'-i'","$workDir + "+psQuote(x.localName));}
+ for(const x of audioInput)args.push("'-i'","$workDir + "+psQuote(x.localName));
+ let filters=[],last='base0';
+ filters.push('[0:v]format=yuv420p[base0]');
+ videoInput.forEach((x,i)=>{const v='vsrc'+i,next='base'+(i+1),start=Number(x.clip.start_seconds)||0,dur=Number(x.clip.duration_seconds)||5,trim=Number(x.clip.trim_in_seconds)||0;filters.push('['+x.inputIndex+':v]trim=start='+trim+':duration='+dur+',setpts=PTS-STARTPTS,scale='+width+':'+height+':force_original_aspect_ratio=decrease,pad='+width+':'+height+':(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,setpts=PTS-STARTPTS+'+start+'/TB['+v+']');filters.push('['+last+']['+v+']overlay=x=0:y=0:eof_action=pass:shortest=0:enable=between(t\\,'+start+'\\,'+(start+dur)+')['+next+']');last=next;});
+ const srtCues=[];let sceneTime=0;for(const scene of currentPlan.scenes||[]){const d=Number(scene.duration_seconds)||5;const m=(scene.description||'').match(/DIALOGUE:\\s*([\\s\\S]*?)(?:\\s+NARRATION:|$)/);const n=(scene.description||'').match(/NARRATION:\\s*([\\s\\S]*?)(?:\\s+MUSIC:|$)/);const line=[m?.[1],n?.[1]].filter(Boolean).join(' — ');if(line)srtCues.push({start:sceneTime,end:sceneTime+d,text:line});sceneTime+=d;}
+ const fmtSrt=t=>{const ms=Math.round((t%1)*1000),whole=Math.floor(t),hh=String(Math.floor(whole/3600)).padStart(2,'0'),mm=String(Math.floor(whole%3600/60)).padStart(2,'0'),ss=String(whole%60).padStart(2,'0');return hh+':'+mm+':'+ss+','+String(ms).padStart(3,'0');};
+ const srt=srtCues.map((q,i)=>(i+1)+'\\n'+fmtSrt(q.start)+' --> '+fmtSrt(q.end)+'\\n'+q.text).join('\\n\\n');
+ let filter=filters.join(';')+';['+last+']subtitles=filename=subtitles.srt:force_style=FontName=Arial,FontSize=22,Outline=2[vout]';
+ if(audioInput.length){audioInput.forEach((x,i)=>{const start=Number(x.clip.start_seconds)||0,dur=Number(x.clip.duration_seconds)||5,trim=Number(x.clip.trim_in_seconds)||0,vol=Number(x.clip.volume)||1;filters.push('['+x.inputIndex+':a]atrim=start='+trim+':duration='+dur+',asetpts=PTS-STARTPTS,volume='+vol+',adelay='+Math.round(start*1000)+':all=1[a'+i+']');});filters.push(audioInput.map((x,i)=>'[a'+i+']').join('')+'amix=inputs='+audioInput.length+':duration=longest:dropout_transition=0[aout]');filter=filters.join(';')+';['+last+']subtitles=filename=subtitles.srt:force_style=FontName=Arial,FontSize=22,Outline=2[vout]';}
+ const ps=[];
+ ps.push('$ErrorActionPreference = "Stop"');
+ ps.push('$workDir = Join-Path (Get-Location) "studio_render_'+currentPlan.project_id.slice(0,8)+'"');
+ ps.push('New-Item -ItemType Directory -Force -Path $workDir | Out-Null');
+ ps.push('Write-Host "Downloading project media. Signed links expire in about one hour."');
+ inputDefs.forEach(x=>{ps.push('Invoke-WebRequest -Uri '+psQuote(x.url)+' -OutFile (Join-Path $workDir '+psQuote(x.localName));});
+ ps.push("[System.IO.File]::WriteAllText((Join-Path $workDir 'subtitles.srt'), @'
+"+srt+"
+'@, [System.Text.UTF8Encoding]::new($false))");
+ ps.push('$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue; if (-not $ffmpeg) { throw "FFmpeg is not installed or not on PATH. Install FFmpeg and reopen PowerShell." }');
+ ps.push('$argsList = @('+args.join(',')+", '-filter_complex', "+psQuote(filter)+", '-map', '[vout]'"+(audioInput.length?", '-map', '[aout]'":", '-an")+", '-t', "+psQuote(String(total))+", '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p'"+(audioInput.length?", '-c:a', 'aac', '-b:a', '192k'":"")+", (Join-Path $workDir 'final_video.mp4'))");
+ ps.push('& ffmpeg @argsList');
+ ps.push('if ($LASTEXITCODE -ne 0) { throw "FFmpeg render failed with exit code $LASTEXITCODE" }');
+ ps.push('Write-Host "Render complete: $workDir\\final_video.mp4"');
+ const script=ps.join('\\n');
+ downloadText(script,'render-studio-project.ps1','text/plain;charset=utf-8');
+ $('timelineStatus').textContent='Local MP4 render kit downloaded. Run it on Windows with FFmpeg installed. Private media links expire in about one hour. Review output and audio sync before publishing.';
+});
+
 </script></head><body><div class="shell">
 <header class="top"><div class="brand">UNIVERSAL<b>·</b>CHATGPT<b>·</b>AI STUDIO</div><span class="tag">CREATIVE WORKSPACE · FOUNDATION BUILD</span></header>
 <div class="layout"><aside class="side"><h4>WORKSPACE</h4><div class="navitem active">✦ New production</div><div class="navitem">▤ Story & storyboard</div><div class="navitem">◉ Characters & worlds</div><div class="navitem">▣ Media library</div><div class="navitem">♫ Audio studio</div><div class="navitem">◫ Timeline & export</div><p>Provider integrations are not connected yet. No paid API is enabled.</p></aside>
@@ -299,8 +353,8 @@ $('checkComfyQueueBtn').addEventListener('click',async()=>{const base=$('comfyEn
 </section>
 <section class="panel" id="timelineStudio">
 <h2>Timeline editor & subtitles</h2><p class="desc">Arrange scene timing, add audio/video/image tracks, and export an editable timeline manifest and subtitle file. Final MP4 rendering requires generated media assets and a rendering engine.</p>
-<div class="actions"><button class="btn" id="createTimelineBtn">Create / refresh timeline from scenes</button><button class="btn secondary" id="saveTimelineBtn">Save timeline edits</button><button class="btn secondary" id="exportTimelineBtn">Export timeline manifest</button><button class="btn secondary" id="exportSubsBtn">Export subtitles (.vtt)</button></div>
-<div id="timelineStatus" class="hint">Generate a screenplay and save it as a cloud project to create a persistent timeline.</div><div id="timelineItems" class="empty">Timeline not created.</div>
+<div class="actions"><button class="btn" id="createTimelineBtn">Create / refresh timeline from scenes</button><button class="btn secondary" id="saveTimelineBtn">Save timeline edits</button><button class="btn secondary" id="exportTimelineBtn">Export timeline manifest</button><button class="btn" id="downloadRenderKitBtn">Download local MP4 render kit</button><button class="btn secondary" id="exportSubsBtn">Export subtitles (.vtt)</button></div>
+<div class="field"><label for="renderResolution">RENDER RESOLUTION</label><select id="renderResolution"><option value="1080">1080p</option><option value="2160">4K UHD</option><option value="720">720p</option></select></div><div id="timelineStatus" class="hint">Generate a screenplay and save it as a cloud project to create a persistent timeline.</div><div id="timelineItems" class="empty">Timeline not created.</div>
 </section>
 <section class="panel" id="recoveryStudio">
 <h2>Project recovery & version history</h2><p class="desc">Create named recovery snapshots before major edits and restore a previous saved version.</p>
