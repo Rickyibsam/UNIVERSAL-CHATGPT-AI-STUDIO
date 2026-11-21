@@ -303,7 +303,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         folder = Path(temp)
         command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
                    "-f", "lavfi", "-i", f"color=c=black:s={width}x{height}:r={fps}:d={total_duration}"]
-        visual_inputs: list[tuple[dict[str, Any], Path, dict[str, Any], float, float]] = []
+        visual_inputs: list[tuple[dict[str, Any], Path, dict[str, Any], float, float, float]] = []
         audio_inputs: list[tuple[dict[str, Any], Path, dict[str, Any]]] = []
         all_clips = [x[0] for x in visual_layout] + audio
         downloaded: dict[str, tuple[Path, dict[str, Any]]] = {}
