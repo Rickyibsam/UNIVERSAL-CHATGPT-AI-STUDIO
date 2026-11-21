@@ -20,33 +20,34 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 8. Do not claim a generation or export is complete until a real output has been generated and verified.
 
 ## Current implementation status
-- [x] Responsive browser production workspace.
-- [x] Supabase Auth, cloud projects, private project media and RLS-protected data tables.
-- [x] Scene/character editing, timeline data, subtitles export and project version snapshots.
-- [x] Supabase Edge Function `studio-gateway` deployed with JWT verification.
-- [x] Durable job-queue schema: retry schedule, attempt limits, worker locks/heartbeats, provider metadata and cost fields.
-- [x] Atomic `claim_studio_jobs` database function restricted to `service_role`; browser roles cannot claim jobs.
-- [x] Project-scoped locations and scene continuity fields for reusable visual references.
-- [x] Corrected timeline clip RLS checks so tracks, scenes and assets must belong to the same project.
-- [x] Screenplay gateway changed to enqueue a private self-hosted job; no external AI provider is called.
-- [x] Worker source added for job polling, bounded retry, project/scene/character/location context, private media upload and structured screenplay results.
-- [x] Self-hosted inference engine service skeleton added with a single `/v1/generate` contract, allowlisted adapter registry and authenticated capabilities endpoint. No model adapter is installed yet.
-- [ ] Deploy the private worker and owner-operated inference engine; the current Render service is only a static frontend.
-- [ ] Verify an authenticated screenplay job end-to-end after the private engine is online.
-- [ ] Self-hosted image model adapter and private asset ingestion.
-- [ ] Self-hosted video model adapters (open weights only, with license review); no third-party hosted generation APIs. No hosted third-party video generation API will be used.
-- [x] Worker source and Docker image added: durable queue polling, bounded exponential retry, output ingestion into private Storage, and job progress updates. **Not deployed yet**; requires owner-controlled worker hosting and secrets.
-- [x] Expired worker leases are recovered by the atomic claim function; after 45 minutes stale jobs are re-queued within attempt limits or marked failed.
-- [ ] Self-hosted voice/TTS model adapter and private WAV ingestion; lip-sync remains out of scope.
-- [ ] Self-hosted music/SFX model adapters with license review; no third-party hosted generation APIs.
-- [x] Private worker MP4 renderer implemented: ordered visual clips, voice/music/SFX mix, subtitle burn-in and private MP4/SRT ingestion. **Not deployed or runtime-tested yet**.
-- [ ] Advanced timeline renderer: true multi-track positioning, transitions, overlays and effects.
-- [ ] Automated media QC, continuity checks, recovery tests and end-to-end workflow tests.
+
+### Live and deployed
+- [x] Canva-style browser editor with left-side tools, preview canvas and bottom timeline.
+- [x] Render web service deployed on Render free plan: `https://universal-studio-renderer.onrender.com`.
+- [x] Supabase Edge Function `studio-gateway` active with JWT verification; render jobs are project-scoped.
+- [x] Private media uploads, editor clip persistence, timeline restore and version snapshot integration.
+- [x] Debounced cloud autosave and explicit editor save; first cloud project save triggers media/timeline persistence.
+- [x] FFmpeg MP4 renderer with video/image clips, audio mixing, text overlays, speed, fit/crop, rotation, static scale, filter presets, fades/dissolves, slide, zoom, wipe, green/blue chroma key and opacity keyframes.
+- [x] 30fps timeline timing increments.
+- [x] Automated FFmpeg smoke-test script for 720p keyframes/wipe, 1080p chroma/slide and 4K zoom; sample 1080p and 4K MP4 outputs were generated and ffprobe-verified in a Linux test environment.
+- [x] User-scoped Supabase JWT is used by the render web service; no service-role secret is shipped to the browser or renderer.
+
+### Not yet complete / not verified
+- [ ] Full authenticated end-to-end test using a real user project: upload → autosave → close/reopen → render → download.
+- [ ] 4K render stability on Render free instance; CI sample output does not guarantee a long 4K render will fit the free service's memory.
+- [ ] Keyframe support beyond opacity (e.g. position, rotation and more transform curves).
+- [ ] More advanced 3D transitions, motion tracking, masks and compositing.
+- [ ] Permanent background queue worker for non-render jobs.
+- [ ] Owner-operated self-hosted inference engine and licensed model adapters for real AI screenplay, image, video, speech, music and SFX generation. The current engine registry has no adapters; `STUDIO_ENGINE_URL` is not configured.
+- [ ] Real consistency generation across characters and locations using model references.
+- [ ] Full browser regression/E2E and database workflow tests with authenticated project data.
+
+Lip-sync is intentionally out of scope. No third-party hosted AI APIs, paid GPU, or paid worker have been enabled. The Render renderer runs on the free web-service tier and may sleep while idle; long/high-resolution jobs are subject to its memory and execution limits.
 
 ## Self-hosted AI runtime
-The application does not use third-party hosted free-tier or paid generation APIs. The secure gateway validates the user and queues screenplay jobs. A private worker claims jobs, applies bounded retries, loads project/scene/character/location context, and stores generated artifacts in the private `studio-media` bucket. The worker calls only an owner-operated engine through `STUDIO_ENGINE_URL`.
+The application does not use third-party hosted free-tier or paid generation APIs. The secure gateway validates user sessions and queues render jobs. The deployed render web service accepts a user-scoped Supabase JWT, processes only project-owned assets, applies FFmpeg timeline operations, and stores the final MP4 in private Storage. It does not require a service-role key.
 
-The worker container is in `worker/`. It requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STUDIO_ENGINE_URL` and optionally `STUDIO_ENGINE_TOKEN` as server-side environment variables. Never put secrets in the browser, repository, or chat. The self-hosted inference engine and GPU worker are not deployed yet, so AI generation is not yet live.
+The separate polling worker and self-hosted inference engine are not deployed. The engine registry in `engine/` currently has no model adapters, and `STUDIO_ENGINE_URL` is not configured on the renderer. Therefore real AI screenplay, image, video, speech, music and SFX generation is not live yet. A model adapter must be installed on owner-controlled cloud compute with an approved model license before those features can be marked complete.
 
 ## Important limits
 A static Render frontend is not a GPU video-rendering service. The self-hosted inference engine, cloud renderer and GPU worker still need to be integrated and hosted. Free hosting does not provide GPU inference capacity. The project must not start paid compute without explicit approval.
