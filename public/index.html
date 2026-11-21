@@ -22,12 +22,83 @@
 .editor-actions .btn{font-size:12px;padding:8px 11px}
 .editor-status{font-size:12px;color:var(--muted);margin-top:9px}
 @media(max-width:850px){.editor-shell{grid-template-columns:1fr}}
+
+/* Full-screen, single-workspace creator UI */
+html,body{height:100%;overflow:hidden}
+body{background:#080d17}
+.shell{max-width:none;width:100%;height:100dvh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.top{height:54px;min-height:54px;padding:0 18px;border-bottom:1px solid #26334b;background:#0c1321;z-index:20}
+.top .tag{font-size:10px}
+.layout{display:grid;grid-template-columns:218px minmax(0,1fr);gap:0;padding:0;min-height:0;flex:1}
+.side{border:0;border-right:1px solid #26334b;border-radius:0;padding:14px 10px;height:100%;overflow-y:auto;background:#0b1220}
+.side h4{margin:9px 9px 8px}
+.navitem{display:flex;align-items:center;gap:9px;padding:9px 10px;margin:2px 0;font-size:13px;text-decoration:none;border-radius:8px}
+.navitem.active{background:#29254a;color:#e3ddff;box-shadow:inset 2px 0 #a99aff}.navitem.subtool{padding-left:28px;font-size:12px;color:#aebbd2}.navitem.subtool:hover{color:#fff}
+.side p{border-top:1px solid #26334b;padding-top:12px}
+.layout>main{min-width:0;min-height:0;height:100%;overflow:hidden;position:relative;background:radial-gradient(ellipse at 80% 0%,#17233b 0,transparent 40%),#0b111d}
+.mainhead{height:52px;margin:0;padding:8px 18px;align-items:center;border-bottom:1px solid #26334b}
+.mainhead h1{font-size:17px}
+main>.panel{display:none;height:calc(100% - 52px);overflow:auto;border:0;border-radius:0;margin:0;padding:18px 20px;background:transparent}
+main>.panel.active-panel{display:block}
+main>.panel#proEditor{padding:0;height:100%;overflow:hidden;background:#0b111d}
+main>.panel#proEditor>h2,main>.panel#proEditor>.desc{display:none}
+main>.panel#proEditor>.editor-actions:first-of-type{height:48px;min-height:48px;margin:0;padding:7px 12px;border-bottom:1px solid #26334b;background:#101827;align-items:center;overflow-x:auto;flex-wrap:nowrap}
+main>.panel#proEditor>.editor-actions:first-of-type .btn{white-space:nowrap}
+.editor-shell{display:grid;grid-template-columns:290px minmax(0,1fr);grid-template-rows:minmax(260px,1fr) 205px;gap:0;height:calc(100% - 48px);min-height:0}
+.editor-shell>div:first-child{display:contents}
+.editor-stage{grid-column:2;grid-row:1;min-height:0;height:100%;border:0;border-radius:0;background:radial-gradient(ellipse at center,#202b40,#070b12 75%);padding:16px;display:flex;align-items:center;justify-content:center}
+.editor-stage video,.editor-stage img{width:auto;max-width:100%;max-height:100%;height:auto;object-fit:contain;border-radius:5px;box-shadow:0 14px 50px #0009}
+.editor-stage video[style*="aspect-ratio"],.editor-stage img[style*="aspect-ratio"]{max-height:100%}
+.editor-shell>div:nth-child(2){grid-column:1;grid-row:1 / span 2;overflow-y:auto;min-height:0;padding:12px;border-right:1px solid #26334b;background:#0d1523}
+.editor-shell>div:nth-child(2) .editor-tool{margin-bottom:10px!important}
+.editor-shell>div:nth-child(2) .editor-tool h3{color:#dce5f7}
+.editor-shell>div:nth-child(2) .editor-tools{gap:7px}
+.editor-shell>div:nth-child(2) input,.editor-shell>div:nth-child(2) select,.editor-shell>div:nth-child(2) textarea{font-size:12px;padding:8px}
+#editorTimeline{grid-column:2;grid-row:2;min-height:0;max-height:205px;overflow:auto;border-top:1px solid #34415b;padding:7px 12px;background:#0a111d}
+#editorTimeline .track{margin:5px 0;padding:6px}
+#editorTimeline .track-lane{min-height:38px}
+#editorTimeline .clip{min-height:34px}
+#editorStage .editor-overlay{z-index:3}
+.editor-status{position:sticky;bottom:0;background:#0c1423;padding:8px;border-top:1px solid #26334b}
+#editorTransport{grid-column:2;grid-row:1;align-self:end;justify-self:center;z-index:5;margin:0 0 10px;padding:6px 9px;background:#0b1220dd;border:1px solid #394761;border-radius:10px}
+#editorTransport .btn{padding:6px 10px}
+#editorPlayhead{max-width:130px}
+#editorTimeline .track-head{font-size:10px}
+#editorTimeline .clip{font-size:10px}
+#editorTimeline .clip small{font-size:9px}
+#editorTimeline .track-lane{overflow-x:auto}
+body.editor-mode .mainhead{display:none}
+body.editor-mode main>.panel#proEditor{height:100%}
+body.editor-mode main>.panel#proEditor .editor-shell{height:calc(100% - 48px)}
+body.editor-mode .layout>main{height:100%}
+#accountStudio .fieldgrid{max-width:760px}
+@media(max-width:900px){
+ html,body{overflow:auto;height:auto}
+ .shell{height:auto;min-height:100dvh;overflow:visible}
+ .layout{grid-template-columns:1fr;min-height:calc(100dvh - 54px)}
+ .side{height:auto;max-height:none;border-right:0;border-bottom:1px solid #26334b;display:flex;gap:4px;overflow-x:auto;white-space:nowrap}
+ .side h4,.side p{display:none}.navitem{flex:0 0 auto}
+ .layout>main{height:auto;min-height:70vh;overflow:visible}
+ main>.panel,main>.panel#proEditor{height:auto;min-height:70vh;overflow:visible}
+ .editor-shell{display:flex;flex-direction:column;height:auto}
+ .editor-shell>div:first-child{display:flex;flex-direction:column}
+ .editor-stage{min-height:45vh;order:0}
+ .editor-shell>div:nth-child(2){order:1;overflow:visible}
+ #editorTimeline{order:2;max-height:260px}
+ #editorTransport{order:1;position:static}
+}
+
+.editor-sticker{position:absolute;z-index:4;top:48%;left:50%;transform:translate(-50%,-50%);font-size:clamp(34px,7vw,80px);filter:drop-shadow(0 4px 6px #0009);pointer-events:none}
+@keyframes studio-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes studio-zoom-in{from{opacity:.2;transform:scale(.65)}to{opacity:1;transform:scale(1)}}
+@keyframes studio-bounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-22px)}65%{transform:translateY(-8px)}}
+@keyframes studio-slide-up{from{opacity:0;transform:translateY(45px)}to{opacity:1;transform:translateY(0)}}
 </style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2">
 </script></head><body><div class="shell">
 <header class="top"><div class="brand">UNIVERSAL<b>·</b>CHATGPT<b>·</b>AI STUDIO</div><span class="tag">CREATIVE WORKSPACE · FOUNDATION BUILD</span></header>
-<div class="layout"><aside class="side"><h4>CREATE</h4><a class="navitem active" href="#production">✦ New production</a><a class="navitem" href="#templateStudio">▦ Templates</a><a class="navitem" href="#worldStudio">▧ 3D & Minecraft worlds</a><a class="navitem" href="#storyStudio">▤ Story & storyboard</a><a class="navitem" href="#characterStudio">◉ Characters & objects</a><a class="navitem" href="#mediaLibrary">▣ Uploads & media library</a><a class="navitem" href="#audioStudio">♫ Voice, music & SFX</a><a class="navitem" href="#proEditor">◫ Professional editor</a><a class="navitem" href="#timelineStudio">▤ Timeline & export</a><a class="navitem" href="#importStudio">⇩ Import & Shorts maker</a><a class="navitem" href="#publishStudio">↑ Publish & metadata</a><a class="navitem" href="#recoveryStudio">◷ Versions & recovery</a><a class="navitem" href="#providerStudio">⚙ Engine status</a><p>Creator workspace foundation. Cloud AI generation and advanced 3D rendering are not yet deployed.</p></aside>
+<div class="layout"><aside class="side"><h4>CREATE</h4><a class="navitem active" href="#production">✦ New production</a><a class="navitem" href="#templateStudio">▦ Templates</a><a class="navitem" href="#worldStudio">▧ 3D & Minecraft worlds</a><a class="navitem" href="#storyStudio">▤ Story & storyboard</a><a class="navitem" href="#characterStudio">◉ Characters & objects</a><a class="navitem" href="#mediaLibrary">▣ Uploads & media library</a><a class="navitem" href="#audioStudio">♫ Voice, music & SFX</a><a class="navitem" href="#proEditor">◫ Professional editor</a><a class="navitem subtool" href="#proEditor" data-editor-focus="editorEffectsPanel">✧ Effects & filters</a><a class="navitem subtool" href="#proEditor" data-editor-focus="editorTextPanel">T Text & stickers</a><a class="navitem subtool" href="#proEditor" data-editor-focus="editorClipPanel">⌁ Clip & transform</a><a class="navitem" href="#timelineStudio">▤ Timeline & export</a><a class="navitem" href="#importStudio">⇩ Import & Shorts maker</a><a class="navitem" href="#publishStudio">↑ Publish & metadata</a><a class="navitem" href="#recoveryStudio">◷ Versions & recovery</a><a class="navitem" href="#providerStudio">⚙ Engine status</a><p>Creator workspace foundation. Cloud AI generation and advanced 3D rendering are not yet deployed.</p></aside>
 <main><div class="mainhead"><div><h1>Create a production</h1><div class="muted">Start with one idea. Shape it into a scene-by-scene plan.</div></div><span class="status">● Planner prototype</span></div>
-<section class="panel"><h2>Account & cloud projects</h2><p class="desc">Sign in to save your productions securely in your private Supabase account.</p><div class="fieldgrid"><div class="field"><label for="authEmail">EMAIL</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="field"><label for="authPassword">PASSWORD</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters"></div></div><div class="actions"><button class="btn" id="signInBtn">Sign in</button><button class="btn secondary" id="signUpBtn">Create account</button><button class="btn secondary" id="signOutBtn" hidden>Sign out</button><button class="btn secondary" id="refreshProjectsBtn">Refresh projects</button></div><p class="hint" id="authStatus" role="status">Not signed in. Local draft saving remains available.</p><div id="cloudProjects" class="empty">Sign in to view your cloud projects.</div></section><section class="panel" id="templateStudio"><h2>Template library</h2><p class="desc">Choose a platform-ready canvas. Selecting a template applies its aspect ratio and starter project settings.</p><div class="toolgrid" id="templateGrid">
+<section class="panel" id="accountStudio"><h2>Account & cloud projects</h2><p class="desc">Sign in to save your productions securely in your private Supabase account.</p><div class="fieldgrid"><div class="field"><label for="authEmail">EMAIL</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="field"><label for="authPassword">PASSWORD</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters"></div></div><div class="actions"><button class="btn" id="signInBtn">Sign in</button><button class="btn secondary" id="signUpBtn">Create account</button><button class="btn secondary" id="signOutBtn" hidden>Sign out</button><button class="btn secondary" id="refreshProjectsBtn">Refresh projects</button></div><p class="hint" id="authStatus" role="status">Not signed in. Local draft saving remains available.</p><div id="cloudProjects" class="empty">Sign in to view your cloud projects.</div></section><section class="panel" id="templateStudio"><h2>Template library</h2><p class="desc">Choose a platform-ready canvas. Selecting a template applies its aspect ratio and starter project settings.</p><div class="toolgrid" id="templateGrid">
 <article class="toolcard"><div class="template-preview vertical">▶</div><h3>YouTube Shorts</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="YouTube Shorts" data-ratio="9:16">Use template</button></article><article class="toolcard"><div class="template-preview ">▶</div><h3>YouTube Video</h3><p>16:9 · Starter layout</p><button class="btn secondary use-template" data-name="YouTube Video" data-ratio="16:9">Use template</button></article><article class="toolcard"><div class="template-preview vertical">f</div><h3>Facebook Reels</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="Facebook Reels" data-ratio="9:16">Use template</button></article><article class="toolcard"><div class="template-preview ">f</div><h3>Facebook Video</h3><p>16:9 · Starter layout</p><button class="btn secondary use-template" data-name="Facebook Video" data-ratio="16:9">Use template</button></article><article class="toolcard"><div class="template-preview vertical">◎</div><h3>Instagram Reels</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="Instagram Reels" data-ratio="9:16">Use template</button></article><article class="toolcard"><div class="template-preview vertical">♪</div><h3>TikTok Shorts</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="TikTok Shorts" data-ratio="9:16">Use template</button></article><article class="toolcard"><div class="template-preview vertical">▣</div><h3>Movie Shorts</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="Movie Shorts" data-ratio="9:16">Use template</button></article><article class="toolcard"><div class="template-preview vertical">✒</div><h3>Poetry Shorts</h3><p>9:16 · Starter layout</p><button class="btn secondary use-template" data-name="Poetry Shorts" data-ratio="9:16">Use template</button></article>
 </div><p class="hint" id="templateStatus" role="status">Templates set the canvas format; design packs and preview thumbnails will be added in the asset phase.</p></section>
 <section class="panel" id="worldStudio"><h2>3D & Minecraft world workspace</h2><p class="desc">Lightweight scene-planning canvas for real-world locations, stylized environments and Minecraft-style voxel scenes. This is a scene layout prototype, not a live 3D renderer yet.</p><div class="workspace-grid"><div><div class="field"><label for="worldMode">WORLD TYPE</label><select id="worldMode"><option>Realistic 3D location</option><option>Cartoon 3D world</option><option>Minecraft voxel world</option><option>Fantasy / adventure world</option></select></div><div class="field" style="margin-top:10px"><label for="worldLocation">LOCATION / BIOME</label><input id="worldLocation" placeholder="e.g. Lahore old city, jungle, desert, snowy mountains"></div><div class="field" style="margin-top:10px"><label for="worldWeather">WEATHER & TIME</label><select id="worldWeather"><option>Sunny · Day</option><option>Sunset / golden hour</option><option>Night</option><option>Rain</option><option>Snow</option><option>Fog</option></select></div><div class="field" style="margin-top:10px"><label for="worldObjects">ADD OBJECT / CHARACTER</label><select id="worldObjects"><option>Character</option><option>Animal</option><option>Vehicle</option><option>Building</option><option>Tree / nature</option><option>Minecraft house</option><option>Minecraft mob</option><option>Camera</option></select></div><div class="actions"><button class="btn" id="addWorldObject">Add to scene</button><button class="btn secondary" id="downloadWorldPlan">Export scene plan</button></div><div id="worldObjectList" aria-live="polite"><span class="muted">No scene objects added yet.</span></div></div><div class="world-preview" id="worldPreview"><div class="world-sun"></div><div class="world-hill"></div><div class="world-hill two"></div><span class="world-label" id="worldPreviewLabel">3D environment preview · concept</span></div></div><p class="hint" id="worldStatus" role="status">No GPU required for this planning canvas. Actual imported 3D assets, terrain editing and animation engine are future integration work.</p></section>
@@ -76,28 +147,28 @@
 <div class="editor-shell">
 <div>
 <div class="editor-stage" id="editorStage"><div class="empty">Add a video or image to begin editing.</div><div class="editor-overlay" id="editorTextOverlay"></div></div>
-<div class="editor-actions">
+<div class="editor-actions" id="editorTransport">
 <button class="btn secondary" id="editorSplit">Split selected at playhead</button><button class="btn secondary" id="editorDuplicate">Duplicate clip</button><button class="btn secondary" id="editorDelete">Delete clip</button>
 <label class="hint">Playhead <input id="editorPlayhead" type="range" min="0" max="300" value="0" style="width:150px;vertical-align:middle"></label>
 </div>
 <div id="editorTimeline"><div class="empty">Timeline tracks will appear after adding media.</div></div>
 </div>
 <div>
-<div class="editor-tool" style="margin-bottom:10px"><label for="editorSelected">SELECTED CLIP</label><select id="editorSelected"><option value="">No clip selected</option></select><div class="editor-tools" style="margin-top:9px">
+<div class="editor-tool" id="editorClipPanel" style="margin-bottom:10px"><label for="editorSelected">SELECTED CLIP</label><select id="editorSelected"><option value="">No clip selected</option></select><div class="editor-tools" style="margin-top:9px">
 <div><label for="editorTrack">TRACK</label><select id="editorTrack"><option value="video">Video</option><option value="overlay">Overlay</option><option value="audio">Audio / Music</option><option value="sfx">Sound effects</option><option value="subtitles">Subtitles</option></select></div>
 <div><label for="editorStart">START (sec)</label><input id="editorStart" type="number" min="0" step=".1" value="0"></div>
 <div><label for="editorTrimIn">TRIM IN (sec)</label><input id="editorTrimIn" type="number" min="0" step=".1" value="0"></div>
 <div><label for="editorTrimOut">TRIM OUT (sec)</label><input id="editorTrimOut" type="number" min="0" step=".1" value="0"></div>
 </div><button class="btn secondary" id="editorApplyTiming" style="margin-top:9px">Apply clip timing</button></div>
-<div class="editor-tool" style="margin-bottom:10px"><h3 style="font-size:13px;margin:0 0 9px">Shorts effects & filters</h3><div class="editor-tools">
-<div><label for="editorFilter">FILTER</label><select id="editorFilter"><option value="none">Original</option><option value="contrast(1.18) saturate(1.25)">Vivid</option><option value="sepia(.75) contrast(1.1)">Vintage</option><option value="grayscale(1)">Black & white</option><option value="brightness(1.2) saturate(.8)">Bright</option><option value="contrast(1.35) saturate(.75)">Cinematic</option><option value="hue-rotate(35deg) saturate(1.4)">Dream</option><option value="blur(1.2px)">Soft focus</option></select></div>
+<div class="editor-tool" id="editorEffectsPanel" style="margin-bottom:10px"><h3 style="font-size:13px;margin:0 0 9px">Shorts effects & filters</h3><div class="editor-tools">
+<div><label for="editorFilter">FILTER</label><select id="editorFilter"><option value="none">Original</option><option value="contrast(1.18) saturate(1.25)">Vivid</option><option value="sepia(.75) contrast(1.1)">Vintage</option><option value="grayscale(1)">Black & white</option><option value="brightness(1.2) saturate(.8)">Bright</option><option value="contrast(1.35) saturate(.75)">Cinematic</option><option value="hue-rotate(35deg) saturate(1.4)">Dream</option><option value="blur(1.2px)">Soft focus</option><option value="brightness(1.1) contrast(1.25) saturate(1.5)">Pop</option><option value="sepia(.35) hue-rotate(320deg) saturate(1.4)">Retro</option><option value="grayscale(1) contrast(1.5)">Noir</option><option value="saturate(1.8) contrast(1.08)">Hyper color</option><option value="brightness(.82) contrast(1.35)">Dark cinematic</option></select></div>
 <div><label for="editorSpeed">SPEED</label><select id="editorSpeed"><option value="0.5">0.5× Slow</option><option value="0.75">0.75×</option><option value="1" selected>1× Normal</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2× Fast</option></select></div>
 <div><label for="editorTransition">TRANSITION</label><select id="editorTransition"><option>None</option><option>Fade</option><option>Dissolve</option><option>Slide left</option><option>Slide right</option><option>Zoom</option><option>Wipe</option></select></div>
 <div><label for="editorAspect">CROP / CANVAS</label><select id="editorAspect"><option value="9 / 16">9:16 Shorts</option><option value="16 / 9">16:9 Landscape</option><option value="1 / 1">1:1 Square</option><option value="4 / 5">4:5 Portrait</option></select></div>
 <div><label for="editorVolume">VOLUME</label><input id="editorVolume" type="range" min="0" max="1" step=".05" value="1"></div>
-<div><label for="editorFade">FADE (sec)</label><input id="editorFade" type="number" min="0" max="10" step=".1" value="0"></div>
-</div><button class="btn secondary" id="editorApplyEffects" style="margin-top:9px">Apply effect settings</button></div>
-<div class="editor-tool"><h3 style="font-size:13px;margin:0 0 9px">Text, captions & stickers</h3><label for="editorTitle">TITLE / CAPTION</label><textarea id="editorTitle" rows="3" placeholder="Add a title or subtitle overlay..." style="min-height:70px"></textarea><div class="editor-tools"><div><label for="editorTextSize">TEXT SIZE</label><input id="editorTextSize" type="number" min="12" max="100" value="34"></div><div><label for="editorTextPosition">POSITION</label><select id="editorTextPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></div></div><button class="btn secondary" id="editorApplyText" style="margin-top:9px">Apply title overlay</button>
+<div><label for="editorFade">FADE (sec)</label><input id="editorFade" type="number" min="0" max="10" step=".1" value="0"></div><div><label for="editorFit">FIT / CROP</label><select id="editorFit"><option value="contain">Fit</option><option value="cover">Fill / crop</option></select></div><div><label for="editorRotate">ROTATE</label><select id="editorRotate"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div><div><label for="editorScale">SCALE %</label><input id="editorScale" type="number" min="50" max="200" value="100"></div><div><label for="editorAnimation">ANIMATION</label><select id="editorAnimation"><option value="none">None</option><option value="fade-in">Fade in</option><option value="zoom-in">Zoom in</option><option value="bounce">Bounce</option><option value="slide-up">Slide up</option></select></div>
+</div><button class="btn secondary" id="editorApplyEffects" style="margin-top:9px">Apply effect settings</button><div class="hint">Filter, crop, rotation, scale and animation update the preview. Export rendering integration is still being built.</div></div>
+<div class="editor-tool" id="editorTextPanel"><h3 style="font-size:13px;margin:0 0 9px">Text, captions & stickers</h3><label for="editorTitle">TITLE / CAPTION</label><textarea id="editorTitle" rows="3" placeholder="Add a title or subtitle overlay..." style="min-height:70px"></textarea><div class="editor-tools"><div><label for="editorSticker">STICKER</label><select id="editorSticker"><option value="">None</option><option value="✨">✨ Sparkles</option><option value="🔥">🔥 Fire</option><option value="❤️">❤️ Heart</option><option value="⭐">⭐ Star</option><option value="😂">😂 Laugh</option><option value="🎯">🎯 Target</option><option value="💥">💥 Boom</option></select></div><div><label for="editorTextSize">TEXT SIZE</label><input id="editorTextSize" type="number" min="12" max="100" value="34"></div><div><label for="editorTextPosition">POSITION</label><select id="editorTextPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></div></div><button class="btn secondary" id="editorApplyText" style="margin-top:9px">Apply title / sticker</button>
 <div class="editor-status" id="proEditorStatus">Editor ready. Media stays in this browser until uploaded to your private project library.</div></div>
 </div>
 </div>
@@ -122,7 +193,7 @@
 <div class="fieldgrid" style="margin-top:14px"><div class="field"><label for="audioPreset">GENERATED AUDIO TYPE</label><select id="audioPreset"><option value="cinematic">Cinematic background music</option><option value="ambient">Soft ambient music</option><option value="suspense">Suspense pulse</option><option value="whoosh">Whoosh transition SFX</option><option value="impact">Soft impact SFX</option><option value="sparkle">Magic sparkle SFX</option><option value="rain">Rain ambience SFX</option></select></div><div class="field"><label for="audioLength">DURATION (SECONDS)</label><select id="audioLength"><option value="10">10 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option></select></div></div>
 <div class="actions"><button class="btn" id="generateAudioBtn">Generate WAV audio</button></div>
 <div id="audioStudioStatus" class="hint">Generated audio is procedural/original, not a neural AI music model. Save the downloaded WAV in your project media library using the upload control.</div>
-</section><section class="panel" id="providerStudio"><h2>Cloud AI provider centre</h2><p class="desc">Your browser is the control panel. Generation runs on cloud AI infrastructure.</p><div class="pillrow"><span class="pill">Cloud screenplay · gateway deployed</span><span class="pill">Cloud image · pending</span><span class="pill">Cloud video · pending</span><span class="pill">Cloud voice · pending</span><span class="pill">Cloud music/SFX · pending</span><span class="pill">Lip-sync · omitted</span></div><div class="scene"><div class="sceneNo">1</div><div><h3>Text / screenplay</h3><p>Self-hosted open-weight screenplay engine; private worker required.</p></div></div><div class="scene"><div class="sceneNo">2</div><div><h3>Image and video</h3><p>Cloud provider adapters and reference continuity are next. Paid services remain disabled until approved.</p></div></div><div id="providerStatus" class="hint">No paid provider is enabled.</div></section><section class="panel"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">System voice preview · available</span><span class="pill">Procedural music & SFX · WAV</span><span class="pill">Cloud MP4 renderer · pending</span><span class="pill">Automated media QC · pending</span></div></section>
+</section><section class="panel" id="providerStudio"><h2>Cloud AI provider centre</h2><p class="desc">Your browser is the control panel. Generation runs on cloud AI infrastructure.</p><div class="pillrow"><span class="pill">Cloud screenplay · gateway deployed</span><span class="pill">Cloud image · pending</span><span class="pill">Cloud video · pending</span><span class="pill">Cloud voice · pending</span><span class="pill">Cloud music/SFX · pending</span><span class="pill">Lip-sync · omitted</span></div><div class="scene"><div class="sceneNo">1</div><div><h3>Text / screenplay</h3><p>Self-hosted open-weight screenplay engine; private worker required.</p></div></div><div class="scene"><div class="sceneNo">2</div><div><h3>Image and video</h3><p>Cloud provider adapters and reference continuity are next. Paid services remain disabled until approved.</p></div></div><div id="providerStatus" class="hint">No paid provider is enabled.</div></section><section class="panel" id="pipelineStudio"><h2>3. Production pipeline</h2><p class="desc">Planned modules and their current implementation status.</p><div class="pillrow"><span class="pill">Prompt workspace · prototype</span><span class="pill">Scene planner · basic</span><span class="pill">Character consistency · planned</span><span class="pill">AI video providers · not connected</span><span class="pill">System voice preview · available</span><span class="pill">Procedural music & SFX · WAV</span><span class="pill">Cloud MP4 renderer · pending</span><span class="pill">Automated media QC · pending</span></div></section>
 </main></div><footer class="foot"><span>UNIVERSAL-CHATGPT-AI-STUDIO · Independent project</span><span>Free-first development · Paid providers require your approval · <a href="https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO/blob/main/docs/CLOUD_AI_SETUP.md" target="_blank" rel="noopener">Cloud AI setup guide</a></span></footer></div>
 <script>
 const $=id=>document.getElementById(id);let currentPlan=null;const characterDrafts=[];function renderCharacters(){$('characterList').innerHTML=characterDrafts.length?characterDrafts.map((x,i)=>'<div class="scene"><div class="sceneNo">C'+(i+1)+'</div><div><h3>'+escapeHtml(x.name)+'</h3><p>'+escapeHtml(x.description)+'</p><p class="hint">Voice: '+escapeHtml(x.voice_profile.style||'Not specified')+' · '+escapeHtml(x.continuity_notes||'No continuity notes')+'</p><button class="btn secondary remove-character" data-index="'+i+'">Remove</button></div></div>').join(''):'No characters added yet.';$('characterList').querySelectorAll('.remove-character').forEach(b=>b.addEventListener('click',()=>{characterDrafts.splice(Number(b.dataset.index),1);renderCharacters();}));} $('addCharacterBtn').addEventListener('click',()=>{const name=$('characterName').value.trim(),description=$('characterDescription').value.trim();if(!name||!description){setAuthStatus('Enter a character name and appearance description.');return;}characterDrafts.push({name,description,voice_profile:{style:$('characterVoice').value.trim()},continuity_notes:$('characterContinuity').value.trim()});$('characterName').value='';$('characterDescription').value='';$('characterVoice').value='';$('characterContinuity').value='';renderCharacters();});
@@ -511,14 +582,14 @@ function select(id){
  if(!c)return;
  $e('editorTrack').value=c.track;$e('editorStart').value=c.start;$e('editorTrimIn').value=c.trimIn;$e('editorTrimOut').value=c.trimOut;
  $e('editorSpeed').value=String(c.speed);$e('editorTransition').value=c.transition;$e('editorVolume').value=c.volume;
- $e('editorFilter').value=c.filter;$e('editorFade').value=c.fade;
- const stage=$e('editorStage');stage.innerHTML='<div class="editor-overlay">'+safeName(c.text||'')+'</div>';
- if(c.kind==='video'){const v=document.createElement('video');v.src=c.url;v.controls=true;v.playsInline=true;v.style.maxWidth='100%';v.style.maxHeight='440px';v.style.aspectRatio=$e('editorAspect').value;v.style.filter=c.filter;v.playbackRate=c.speed;v.volume=c.volume;stage.prepend(v);}
- else if(c.kind==='image'){const im=document.createElement('img');im.src=c.url;im.style.aspectRatio=$e('editorAspect').value;im.style.filter=c.filter;stage.prepend(im);}
+ $e('editorFilter').value=c.filter;$e('editorFade').value=c.fade;$e('editorFit').value=c.fit||'contain';$e('editorRotate').value=String(c.rotate||0);$e('editorScale').value=c.scale||100;$e('editorAnimation').value=c.animation||'none';$e('editorSticker').value=c.sticker||'';
+ const stage=$e('editorStage');stage.innerHTML='<div class="editor-overlay">'+safeName(c.text||'')+'</div><div class="editor-sticker">'+safeName(c.sticker||'')+'</div>';
+ if(c.kind==='video'){const v=document.createElement('video');v.src=c.url;v.controls=true;v.playsInline=true;v.style.maxWidth='100%';v.style.maxHeight='440px';v.style.aspectRatio=$e('editorAspect').value;v.style.filter=c.filter;v.style.objectFit=c.fit||'contain';v.style.transform='rotate('+(c.rotate||0)+'deg) scale('+(c.scale||100)/100+')';if(c.animation&&c.animation!=='none')v.style.animation='studio-'+c.animation+' .7s ease both';v.playbackRate=c.speed;v.volume=c.volume;stage.prepend(v);}
+ else if(c.kind==='image'){const im=document.createElement('img');im.src=c.url;im.style.aspectRatio=$e('editorAspect').value;im.style.filter=c.filter;im.style.objectFit=c.fit||'contain';im.style.transform='rotate('+(c.rotate||0)+'deg) scale('+(c.scale||100)/100+')';if(c.animation&&c.animation!=='none')im.style.animation='studio-'+c.animation+' .7s ease both';stage.prepend(im);}
  else {stage.innerHTML='<div class="empty">Audio clip selected: '+safeName(c.name)+'. Preview it with the track controls after export.</div>';}
  const overlay=stage.querySelector('.editor-overlay');overlay.style.top=c.textPosition==='bottom'?'auto':c.textPosition==='center'?'45%':'10%';
  overlay.style.bottom=c.textPosition==='bottom'?'8%':'auto';
- overlay.style.fontSize=(c.textSize||34)+'px';
+ overlay.style.fontSize=(c.textSize||34)+'px';const sticker=stage.querySelector('.editor-sticker');sticker.style.display=c.sticker?'block':'none';
 }
 $e('editorFiles').addEventListener('change',ev=>{
  for(const file of ev.target.files){
@@ -541,13 +612,13 @@ $e('editorApplyTiming').addEventListener('click',()=>{
 });
 $e('editorApplyEffects').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
- remember();Object.assign(c,{filter:$e('editorFilter').value,speed:Number($e('editorSpeed').value),transition:$e('editorTransition').value,volume:Number($e('editorVolume').value),fade:Number($e('editorFade').value)});
+ remember();Object.assign(c,{filter:$e('editorFilter').value,speed:Number($e('editorSpeed').value),transition:$e('editorTransition').value,volume:Number($e('editorVolume').value),fade:Number($e('editorFade').value),fit:$e('editorFit').value,rotate:Number($e('editorRotate').value),scale:Math.max(50,Math.min(200,Number($e('editorScale').value)||100)),animation:$e('editorAnimation').value});
  if(c.speed<=0||c.volume<0||c.volume>1||c.fade<0)return status('Effect setting is invalid.');
  select(c.id);status('Effect settings applied to preview and saved in edit data. Transition and fades are edit instructions until rendered.');
 });
 $e('editorApplyText').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
- remember();Object.assign(c,{text:$e('editorTitle').value,textSize:Math.max(12,Math.min(100,Number($e('editorTextSize').value)||34)),textPosition:$e('editorTextPosition').value});select(c.id);status('Text overlay applied to selected clip preview.');
+ remember();Object.assign(c,{text:$e('editorTitle').value,sticker:$e('editorSticker').value,textSize:Math.max(12,Math.min(100,Number($e('editorTextSize').value)||34)),textPosition:$e('editorTextPosition').value});select(c.id);status('Text overlay applied to selected clip preview.');
 });
 $e('editorSplit').addEventListener('click',()=>{
  const c=current(),at=Number($e('editorPlayhead').value);if(!c)return status('Select a clip first.');
@@ -565,5 +636,28 @@ function manifest(){return {format:'universal-studio-edit-v1',created_at:new Dat
 $e('editorExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(manifest(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='universal-studio-edit.json';a.click();URL.revokeObjectURL(url);status('Edit manifest exported. Source media files are not embedded in JSON.');});
 $e('editorSave').addEventListener('click',()=>{try{sessionStorage.setItem('studio-pro-editor-draft',JSON.stringify(manifest()));status('Edit settings saved in this browser session. Upload source media separately to your private cloud library.');}catch(e){status('Could not save editor draft: '+e.message);}});
 window.addEventListener('beforeunload',()=>state.urls.forEach(URL.revokeObjectURL));
+})();
+
+/* Canva-like panel navigation: keep the workspace in one viewport */
+(()=>{
+ const main=document.querySelector('.layout>main');
+ const nav=[...document.querySelectorAll('.side .navitem')];
+ const panels=[...main.querySelectorAll(':scope > .panel')];
+ const titleMap={accountStudio:'Account & cloud projects',templateStudio:'Templates',worldStudio:'3D & Minecraft worlds',importStudio:'Import & Shorts maker',publishStudio:'Publish & metadata',production:'New production',storyStudio:'Story & storyboard',characterStudio:'Characters & objects',result:'Scene plan',mediaLibrary:'Uploads & media library',proEditor:'Professional video editor',timelineStudio:'Timeline & export',recoveryStudio:'Versions & recovery',audioStudio:'Voice, music & SFX',providerStudio:'Engine status',pipelineStudio:'Production pipeline'};
+ function activate(id,updateHash=true){
+  let panel=document.getElementById(id);
+  if(!panel||!main.contains(panel))return;
+  panels.forEach(p=>p.classList.toggle('active-panel',p===panel));
+  nav.forEach(a=>{const on=a.getAttribute('href')==='#'+id;a.classList.toggle('active',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  document.body.classList.toggle('editor-mode',id==='proEditor');
+  const head=main.querySelector('.mainhead');
+  if(head){head.style.display=id==='proEditor'?'none':'flex';const h=head.querySelector('h1');if(h)h.textContent=titleMap[id]||'Creator workspace';const sub=head.querySelector('.muted');if(sub)sub.textContent='Choose a tool from the left workspace menu.';}
+  if(updateHash)history.replaceState(null,'','#'+id);
+  if(id==='proEditor'&&window.dispatchEvent)window.dispatchEvent(new CustomEvent('studio-editor-activated'));
+ }
+ nav.forEach(a=>a.addEventListener('click',ev=>{ev.preventDefault();const id=a.getAttribute('href').slice(1);activate(id);const focus=a.dataset.editorFocus;if(focus){const target=document.getElementById(focus);if(target)target.scrollIntoView({behavior:'smooth',block:'start'});}}));
+ const initial=location.hash.slice(1);
+ activate(document.getElementById(initial)?initial:'proEditor',false);
+ window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(id)activate(id,false);});
 })();
 </script></body></html>
