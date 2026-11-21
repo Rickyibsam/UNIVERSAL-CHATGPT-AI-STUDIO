@@ -418,7 +418,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             elif transition == "slide right":
                 overlay_x = f"if(lt(t,{start_seconds + 0.5:.5f}),-main_w*(1-(t-{start_seconds:.5f})/0.5),0)"
                 overlay_y = "0"
-            elif transition == "zoom":
+            elif transition == "zoom" or abs(float(clip.get("scale", 100) or 100) - 100.0) > 0.001:
                 overlay_x = "(main_w-overlay_w)/2"
                 overlay_y = "(main_h-overlay_h)/2"
             else:
