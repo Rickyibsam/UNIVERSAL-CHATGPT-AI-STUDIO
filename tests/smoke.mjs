@@ -49,6 +49,8 @@ assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks
 assert.ok(worker.includes('def render_filter_chain'), 'cloud renderer must map editor filter presets to FFmpeg filters');
 assert.ok(html.includes('id="editorFps"') && html.includes('frameRate:editorFps()') && html.includes('frame_rate:editorFps()'), 'timeline edits and exports must use selectable frame rates');
 assert.ok(html.includes('localTime*editorFps()') && html.includes('sourceOffset=snapFrame(localTime*speed)'), 'keyframes and split points must be clip-local and frame-snapped');
+assert.ok(html.includes('let editorTimebase=editorFps()') && html.includes('next/old'), 'changing FPS must preserve keyframe timing in seconds');
+assert.ok(worker.includes('any(isinstance(k, dict) and "scale" in k'), 'animated scale overlays must remain centered in the output frame');
 assert.ok(worker.includes('scale_expr = keyframe_value_expression') && worker.includes('frame_time(source_duration, fps, 1)'), 'renderer must apply animated scale and quantize clips to exact frames');
 assert.ok(worker.includes('def atempo_filters'), 'cloud renderer must support audio playback speed');
 assert.ok(worker.includes('drawtext=fontfile='), 'cloud renderer must burn clip title overlays');
