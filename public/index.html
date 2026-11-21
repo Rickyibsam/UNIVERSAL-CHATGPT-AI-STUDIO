@@ -149,16 +149,16 @@ body.editor-mode .layout>main{height:100%}
 <div class="editor-stage" id="editorStage"><div class="empty">Add a video or image to begin editing.</div><div class="editor-overlay" id="editorTextOverlay"></div></div>
 <div class="editor-actions" id="editorTransport">
 <button class="btn secondary" id="editorSplit">Split selected at playhead</button><button class="btn secondary" id="editorDuplicate">Duplicate clip</button><button class="btn secondary" id="editorDelete">Delete clip</button>
-<label class="hint">Playhead <input id="editorPlayhead" type="range" min="0" max="300" value="0" style="width:150px;vertical-align:middle"></label>
+<label class="hint">Playhead <input id="editorPlayhead" type="range" min="0" max="300" step="0.033333" value="0" style="width:150px;vertical-align:middle"></label>
 </div>
 <div id="editorTimeline"><div class="empty">Timeline tracks will appear after adding media.</div></div>
 </div>
 <div>
 <div class="editor-tool" id="editorClipPanel" style="margin-bottom:10px"><label for="editorSelected">SELECTED CLIP</label><select id="editorSelected"><option value="">No clip selected</option></select><div class="editor-tools" style="margin-top:9px">
 <div><label for="editorTrack">TRACK</label><select id="editorTrack"><option value="video">Video</option><option value="overlay">Overlay</option><option value="audio">Audio / Music</option><option value="sfx">Sound effects</option><option value="subtitles">Subtitles</option></select></div>
-<div><label for="editorStart">START (sec)</label><input id="editorStart" type="number" min="0" step=".1" value="0"></div>
-<div><label for="editorTrimIn">TRIM IN (sec)</label><input id="editorTrimIn" type="number" min="0" step=".1" value="0"></div>
-<div><label for="editorTrimOut">TRIM OUT (sec)</label><input id="editorTrimOut" type="number" min="0" step=".1" value="0"></div>
+<div><label for="editorStart">START (sec)</label><input id="editorStart" type="number" min="0" step="0.033333" value="0"></div>
+<div><label for="editorTrimIn">TRIM IN (sec)</label><input id="editorTrimIn" type="number" min="0" step="0.033333" value="0"></div>
+<div><label for="editorTrimOut">TRIM OUT (sec)</label><input id="editorTrimOut" type="number" min="0" step="0.033333" value="0"></div>
 </div><button class="btn secondary" id="editorApplyTiming" style="margin-top:9px">Apply clip timing</button></div>
 <div class="editor-tool" id="editorEffectsPanel" style="margin-bottom:10px"><h3 style="font-size:13px;margin:0 0 9px">Shorts effects & filters</h3><div class="editor-tools">
 <div><label for="editorFilter">FILTER</label><select id="editorFilter"><option value="none">Original</option><option value="contrast(1.18) saturate(1.25)">Vivid</option><option value="sepia(.75) contrast(1.1)">Vintage</option><option value="grayscale(1)">Black & white</option><option value="brightness(1.2) saturate(.8)">Bright</option><option value="contrast(1.35) saturate(.75)">Cinematic</option><option value="hue-rotate(35deg) saturate(1.4)">Dream</option><option value="blur(1.2px)">Soft focus</option><option value="brightness(1.1) contrast(1.25) saturate(1.5)">Pop</option><option value="sepia(.35) hue-rotate(320deg) saturate(1.4)">Retro</option><option value="grayscale(1) contrast(1.5)">Noir</option><option value="saturate(1.8) contrast(1.08)">Hyper color</option><option value="brightness(.82) contrast(1.35)">Dark cinematic</option></select></div>
