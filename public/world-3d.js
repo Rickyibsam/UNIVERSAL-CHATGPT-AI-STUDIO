@@ -74,8 +74,8 @@ else{
     g.userData.objectId=item.id;
     return g;
   }
-  function setSelected(id){
-    selectedId=id||null;bridge.select(selectedId);
+  function highlightSelected(id){
+    selectedId=id||null;
     for(const [key,node] of objectNodes){
       node.traverse(child=>{
         if(child.isMesh&&child.material&&"emissive" in child.material){
@@ -85,6 +85,7 @@ else{
       });
     }
   }
+  function setSelected(id){selectedId=id||null;bridge.select(selectedId);highlightSelected(selectedId);}
   function buildEnvironment(){
     scene.clear();objectNodes.clear();
     const mode=$("worldMode").value,weather=$("worldWeather").value;
@@ -171,7 +172,7 @@ else{
       $("clearWorldScene")?.addEventListener("click",()=>{selectedId=null;buildEnvironment();});
       window.addEventListener("studio-world-changed",()=>{buildEnvironment();scheduleSave();});
       window.addEventListener("studio-cloud-project-opened",e=>loadWorld(e.detail?.projectId));
-      window.__worldStudioSave=saveWorld;window.__world3dReady=true;
+      window.__worldStudioSave=saveWorld;window.__worldStudioHighlight=highlightSelected;window.__world3dReady=true;
       window.__worldStudioRestore=data=>{if(!data)return;loading=true;selectedId=null;bridge.setScene(data);buildEnvironment();loading=false;scheduleSave();};
       window.addEventListener("resize",resize);
       function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}
