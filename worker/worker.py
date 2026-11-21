@@ -10,6 +10,7 @@ import asyncio
 import base64
 import json
 import logging
+import math
 import os
 import subprocess
 import tempfile
@@ -289,14 +290,18 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
         filters.append(mapped)
     speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
     trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
-    opacity_expr = keyframe_value_expression(clip, "opacity", float(clip.get("opacity", 1) or 1), fps, "T")
-    scale_expr = keyframe_value_expression(clip, "scale", float(clip.get("scale", 100) or 100), fps, "t")
-    if scale_expr:
-        filters.append(f"scale=w='iw*({scale_expr})':h='ih*({scale_expr})':eval=frame")
-    if opacity_expr:
-        filters.append(f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*({opacity_expr})'")
+    filters.append("setpts=PTS-STARTPTS")
+    opacity_default = max(0.0, min(1.0, float(clip.get("opacity", 1) if clip.get("opacity") is not None else 1)))
+    scale_default = max(0.5, min(2.0, float(clip.get("scale", 100) or 100) / 100.0))
+    opacity_expr = keyframe_value_expression(clip, "opacity", opacity_default, fps, "T")
+    scale_expr = keyframe_value_expression(clip, "scale", scale_default * 100, fps, "t")
+    if scale_expr or abs(scale_default - 1.0) > 0.0001:
+        scale_value = scale_expr or f"{scale_default:.6f}"
+        filters.append(f"scale=w='iw*({scale_value})':h='ih*({scale_value})':eval=frame")
+    if opacity_expr or abs(opacity_default - 1.0) > 0.0001:
+        opacity_value = opacity_expr or f"{opacity_default:.6f}"
+        filters.append(f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*({opacity_value})'")
     filters.extend([
-        "setpts=PTS-STARTPTS",
         f"fps={fps}",
         "setsar=1",
         "format=rgba",
