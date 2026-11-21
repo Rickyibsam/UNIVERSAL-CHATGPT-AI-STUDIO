@@ -74,6 +74,11 @@ async def run_job(job: dict[str, Any], auth: dict[str, str]) -> None:
             active_jobs.discard(str(job.get("id")))
 
 
+@app.get("/")
+async def root() -> dict[str, str]:
+    return {"status": "ok", "service": "universal-studio-render-api"}
+
+
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
     return {"status": "ok", "service": "universal-studio-render-api"}
