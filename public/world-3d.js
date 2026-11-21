@@ -175,6 +175,7 @@ else{
       $("clearWorldScene")?.addEventListener("click",()=>{selectedId=null;buildEnvironment();});
       window.addEventListener("studio-world-changed",()=>{buildEnvironment();scheduleSave();});
       window.addEventListener("studio-cloud-project-opened",e=>loadWorld(e.detail?.projectId));
+      if(bridge.projectId)loadWorld(bridge.projectId);
       window.__worldStudioSave=saveWorld;window.__worldStudioHighlight=highlightSelected;window.__world3dReady=true;
       window.__worldStudioRestore=data=>{if(!data)return;loading=true;selectedId=null;bridge.setScene(data);buildEnvironment();loading=false;scheduleSave();};
       window.addEventListener("resize",resize);
