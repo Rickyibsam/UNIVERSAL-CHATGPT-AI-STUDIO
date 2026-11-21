@@ -13,6 +13,7 @@ jobs:
         with:
           node-version: 22
       - run: node tests/smoke.mjs
+      - run: node tests/world_schematic_test.mjs
 
   python-renderer:
     runs-on: ubuntu-latest
