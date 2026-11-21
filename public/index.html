@@ -239,7 +239,14 @@ $('saveBtn').addEventListener('click',async()=>{
  const {data:oldScenes}=await sb.from('scenes').select('id').eq('project_id',projectId);
  for(const old of (oldScenes||[])){if(!currentPlan.scenes.some(s=>s.id===old.id)){await sb.from('scenes').delete().eq('id',old.id).eq('project_id',projectId);}}
  setAuthStatus('Project, characters and scenes saved. Your existing project was updated rather than duplicated.');
- await loadCloudProjects();await ensureTimelineTracks();window.__studioCloudSave?.();
+ await loadCloudProjects();await ensureTimelineTracks();
+ const editorSaved=await window.__studioCloudSave?.();
+ const {data:lastVersion,error:versionLookupError}=await sb.from('project_versions').select('version_number,created_at').eq('project_id',projectId).order('version_number',{ascending:false}).limit(1).maybeSingle();
+ if(!versionLookupError&&(!lastVersion||Date.now()-new Date(lastVersion.created_at).getTime()>10*60*1000)){
+  const {data:{user}}=await sb.auth.getUser();
+  if(user){const nextVersion=(Number(lastVersion?.version_number)||0)+1;const {error:versionError}=await sb.from('project_versions').insert({project_id:projectId,version_number:nextVersion,snapshot:snapshotNow(),change_summary:'Automatic recovery snapshot',created_by:user.id});if(versionError)setAuthStatus('Project saved, but automatic recovery snapshot failed: '+versionError.message);else setAuthStatus('Project autosaved · automatic recovery point v'+nextVersion+' created.');}
+ }
+ if(editorSaved===false)setAuthStatus('Project saved. Editor timeline needs attention; see editor status for details.');
  } finally {
   projectSaveInFlight=false;
   if(projectSavePending){projectSavePending=false;queueProjectAutosave();}
