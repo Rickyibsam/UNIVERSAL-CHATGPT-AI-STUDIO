@@ -188,6 +188,84 @@ def run_ffmpeg(args: list[str]) -> None:
         raise RetryableJobError("FFMPEG_RENDER_FAILED: " + detail)
 
 
+def ffmpeg_text(value: Any) -> str:
+    text = str(value or "")
+    return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace("%", "\\%").replace(",", "\\,").replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
+
+
+def atempo_filters(speed: float) -> str:
+    speed = max(0.25, min(4.0, speed))
+    factors: list[float] = []
+    while speed > 2.0:
+        factors.append(2.0)
+        speed /= 2.0
+    while speed < 0.5:
+        factors.append(0.5)
+        speed /= 0.5
+    factors.append(speed)
+    return ",".join(f"atempo={factor:.5f}" for factor in factors)
+
+
+def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int, start: float, duration: float) -> str:
+    filters: list[str] = []
+    rotation = int(clip.get("rotation") or clip.get("rotate") or 0) % 360
+    if rotation in (90, 270):
+        filters.append("transpose=1" if rotation == 90 else "transpose=2")
+    elif rotation == 180:
+        filters.append("hflip,vflip")
+    fit = str(clip.get("fit") or "contain")
+    if fit == "cover":
+        filters.append(f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}")
+    else:
+        filters.append(f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2")
+    preset = str(clip.get("filter") or "none")
+    filter_map = {
+        "none": "",
+        "contrast(1.18) saturate(1.25)": "eq=contrast=1.18:saturation=1.25",
+        "sepia(.75) contrast(1.1)": "colorchannelmixer=.393:.769:.189:.349:.686:.168:.272:.534:.131,eq=contrast=1.1",
+        "grayscale(1)": "hue=s=0",
+        "brightness(1.2) saturate(.8)": "eq=brightness=0.12:saturation=0.8",
+        "contrast(1.35) saturate(.75)": "eq=contrast=1.35:saturation=0.75",
+        "hue-rotate(35deg) saturate(1.4)": "hue=h=35:s=1.4",
+        "blur(1.2px)": "gblur=sigma=1.2",
+        "brightness(1.1) contrast(1.25) saturate(1.5)": "eq=brightness=0.08:contrast=1.25:saturation=1.5",
+        "sepia(.35) hue-rotate(320deg) saturate(1.4)": "colorbalance=rs=.12:gs=.03:bs=-.08,eq=saturation=1.4",
+        "grayscale(1) contrast(1.5)": "hue=s=0,eq=contrast=1.5",
+        "saturate(1.8) contrast(1.08)": "eq=saturation=1.8:contrast=1.08",
+        "brightness(.82) contrast(1.35)": "eq=brightness=-.12:contrast=1.35",
+    }
+    mapped = filter_map.get(preset)
+    if mapped:
+        filters.append(mapped)
+    speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+    trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
+    filters.extend([
+        f"fps={fps}",
+        f"setpts=(PTS-STARTPTS)/{speed:.5f}+{start:.5f}/TB",
+        "setsar=1",
+        "format=rgba",
+    ])
+    fade = max(0.0, min(5.0, float(clip.get("fade_seconds", clip.get("fade", 0)) or 0)))
+    transition = str(clip.get("transition") or "None").lower()
+    if fade > 0 or transition in ("fade", "dissolve"):
+        fade_duration = min(fade if fade > 0 else 0.5, duration / 2)
+        if fade_duration > 0:
+            filters.append(f"fade=t=in:st={start:.5f}:d={fade_duration:.5f}:alpha=1")
+            filters.append(f"fade=t=out:st={max(start, start + duration - fade_duration):.5f}:d={fade_duration:.5f}:alpha=1")
+    text = str(clip.get("text") or "")
+    if text:
+        safe_text = ffmpeg_text(text)[:500]
+        font = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        size = max(12, min(120, int(clip.get("text_size", 42) or 42)))
+        position = str(clip.get("text_position") or clip.get("textPosition") or "center")
+        y = "h-text_h-80" if position == "bottom" else "40" if position == "top" else "(h-text_h)/2"
+        filters.append(
+            f"drawtext=fontfile={font}:text='{safe_text}':fontcolor=white:fontsize={size}:"
+            f"x=(w-text_w)/2:y={y}:box=1:boxcolor=black@0.38:boxborderw=12"
+        )
+    return ",".join(filters)
+
+
 async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str, Any]:
     params = job.get("input_parameters") or {}
     timeline = params.get("timeline") if isinstance(params.get("timeline"), dict) else params
@@ -197,71 +275,93 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
 
     width = max(320, min(3840, int(timeline.get("width") or 1920)))
     height = max(240, min(2160, int(timeline.get("height") or 1080)))
-    fps = max(12, min(60, int(timeline.get("fps") or 24)))
-    visual = [x for x in clips if x.get("track_type", "video") in ("video", "image")]
-    audio = [x for x in clips if x.get("track_type") in ("voice", "music", "sfx", "audio")]
+    fps = max(12, min(60, int(timeline.get("fps") or 30)))
+    visual = [x for x in clips if x.get("track_type", x.get("track", "video")) in ("video", "image", "overlay")]
+    audio = [x for x in clips if x.get("track_type", x.get("track")) in ("voice", "music", "sfx", "audio")]
     if not visual:
         raise PermanentJobError("RENDER_REQUIRES_VISUAL_CLIPS")
 
-    total_duration = sum(max(0.1, min(120, float(x.get("duration_seconds") or 5))) for x in visual)
-    if total_duration > 900:
+    visual_layout: list[tuple[dict[str, Any], float, float, float]] = []
+    cursor = 0.0
+    for clip in visual:
+        source_duration = max(0.1, min(120, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 5)))
+        speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+        display_duration = source_duration / speed
+        start_seconds = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", cursor)) or 0)))
+        visual_layout.append((clip, start_seconds, source_duration, display_duration))
+        cursor = max(cursor, start_seconds + display_duration)
+    for clip in audio:
+        audio_source_duration = max(0.1, min(900.0, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30)))
+        audio_speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+        audio_start = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", 0)) or 0)))
+        cursor = max(cursor, audio_start + audio_source_duration / audio_speed)
+    total_duration = cursor
+    if total_duration <= 0 or total_duration > 900:
         raise PermanentJobError("RENDER_DURATION_LIMIT_EXCEEDED")
 
     with tempfile.TemporaryDirectory(prefix="studio-render-") as temp:
         folder = Path(temp)
-        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y"]
-        visual_inputs: list[tuple[dict[str, Any], Path, dict[str, Any]]] = []
+        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                   "-f", "lavfi", "-i", f"color=c=black:s={width}x{height}:r={fps}:d={total_duration}"]
+        visual_inputs: list[tuple[dict[str, Any], Path, dict[str, Any], float, float, float]] = []
         audio_inputs: list[tuple[dict[str, Any], Path, dict[str, Any]]] = []
-        all_inputs = visual + audio
+        all_clips = [x[0] for x in visual_layout] + audio
         downloaded: dict[str, tuple[Path, dict[str, Any]]] = {}
-        for index, clip in enumerate(all_inputs):
+        for index, clip in enumerate(all_clips):
             asset_id = str(clip.get("asset_id") or "")
             if not asset_id:
                 raise PermanentJobError("RENDER_CLIP_ASSET_ID_REQUIRED")
             if asset_id not in downloaded:
-                downloaded[asset_id] = await download_asset(
-                    client, str(job["project_id"]), asset_id, folder, index
-                )
+                downloaded[asset_id] = await download_asset(client, str(job["project_id"]), asset_id, folder, index)
             path, asset = downloaded[asset_id]
-            if clip in visual:
-                visual_inputs.append((clip, path, asset))
+            visual_entry = next((x for x in visual_layout if x[0] is clip), None)
+            if visual_entry is not None:
+                _, start_seconds, source_duration, display_duration = visual_entry
+                visual_inputs.append((clip, path, asset, start_seconds, source_duration, display_duration))
             else:
                 audio_inputs.append((clip, path, asset))
 
-        for clip, path, asset in visual_inputs:
-            duration = max(0.1, min(120, float(clip.get("duration_seconds") or asset.get("duration_seconds") or 5)))
+        for clip, path, asset, _start, source_duration, _display_duration in visual_inputs:
             if (asset.get("mime_type") or "").startswith("image/"):
-                command += ["-loop", "1", "-t", str(duration), "-i", str(path)]
+                trim_in = max(0.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0))
+                command += ["-loop", "1", "-t", str(source_duration + trim_in), "-i", str(path)]
             else:
                 command += ["-i", str(path)]
 
-        for clip, path, asset in audio_inputs:
+        for clip, path, _asset in audio_inputs:
             command += ["-i", str(path)]
 
-        filters: list[str] = []
-        video_labels: list[str] = []
-        for index, (clip, _path, asset) in enumerate(visual_inputs):
-            duration = max(0.1, min(120, float(clip.get("duration_seconds") or asset.get("duration_seconds") or 5)))
+        filters: list[str] = ["[0:v]format=rgba[base0]"]
+        current_base = "base0"
+        for index, (clip, _path, asset, start_seconds, source_duration, display_duration) in enumerate(visual_inputs):
+            input_index = index + 1
+            trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
             label = f"v{index}"
+            chain = render_filter_chain(clip, width, height, fps, start_seconds, display_duration)
+            filters.append(f"[{input_index}:v]trim=start={trim_in:.5f}:duration={source_duration:.5f},{chain}[{label}]")
+            next_base = f"mixv{index}"
+            end_seconds = start_seconds + display_duration
             filters.append(
-                f"[{index}:v]trim=duration={duration},setpts=PTS-STARTPTS,"
-                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
-                f"fps={fps},setsar=1,format=yuv420p[{label}]"
+                f"[{current_base}][{label}]overlay=x=0:y=0:eof_action=pass:shortest=0:"
+                f"enable='between(t,{start_seconds:.5f},{end_seconds:.5f})'[{next_base}]"
             )
-            video_labels.append(f"[{label}]")
-        filters.append("".join(video_labels) + f"concat=n={len(video_labels)}:v=1:a=0[vout]")
+            current_base = next_base
 
         audio_labels: list[str] = []
-        input_offset = len(visual_inputs)
+        input_offset = 1 + len(visual_inputs)
         for index, (clip, _path, _asset) in enumerate(audio_inputs):
             input_id = input_offset + index
-            delay = max(0, min(900000, int(float(clip.get("start_seconds") or 0) * 1000)))
+            start_seconds = max(0.0, min(900.0, float(clip.get("start_seconds", clip.get("start", 0)) or 0)))
+            trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
+            duration = max(0.1, min(900.0, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30)))
             volume = max(0.0, min(4.0, float(clip.get("volume", 1.0))))
+            speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
+            delay = int(start_seconds * 1000)
             label = f"a{index}"
             filters.append(
-                f"[{input_id}:a]asetpts=PTS-STARTPTS,adelay={delay}|{delay},"
-                f"volume={volume},aresample=48000[{label}]"
+                f"[{input_id}:a]atrim=start={trim_in:.5f}:duration={duration:.5f},"
+                f"asetpts=PTS-STARTPTS,{atempo_filters(speed)},adelay={delay}|{delay},"
+                f"volume={volume:.4f},aresample=48000[{label}]"
             )
             audio_labels.append(f"[{label}]")
         if audio_labels:
@@ -271,24 +371,20 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
 
         subtitle_text = str(timeline.get("subtitle_srt") or "")
         subtitle_path = None
+        video_map = f"[{current_base}]"
         if subtitle_text:
             if len(subtitle_text) > 2_000_000:
                 raise PermanentJobError("SUBTITLE_FILE_TOO_LARGE")
             subtitle_path = folder / "captions.srt"
             subtitle_path.write_text(subtitle_text, encoding="utf-8")
             if timeline.get("burn_subtitles", True):
-                filters.append(f"[vout]subtitles='{subtitle_path.as_posix()}'[vsub]")
+                filters.append(f"{video_map}subtitles='{subtitle_path.as_posix()}'[vsub]")
                 video_map = "[vsub]"
-            else:
-                video_map = "[vout]"
-        else:
-            video_map = "[vout]"
 
         output = folder / "final.mp4"
         command += [
             "-filter_complex", ";".join(filters),
-            "-map", video_map, "-map", "[aout]",
-            "-t", str(total_duration),
+            "-map", video_map, "-map", "[aout]", "-t", str(total_duration),
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
             "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart", str(output),
@@ -297,27 +393,21 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         if not output.exists() or output.stat().st_size < 1024:
             raise RetryableJobError("FFMPEG_OUTPUT_MISSING")
         artifacts = [{
-            "filename": "final.mp4",
-            "mime_type": "video/mp4",
-            "asset_type": "video",
+            "filename": "final.mp4", "mime_type": "video/mp4", "asset_type": "video",
             "content_base64": base64.b64encode(output.read_bytes()).decode("ascii"),
-            "width": width,
-            "height": height,
-            "duration_seconds": total_duration,
+            "width": width, "height": height, "duration_seconds": total_duration,
             "license_metadata": {"renderer": "ffmpeg", "source": "owner_cloud_worker"},
         }]
         if subtitle_path and subtitle_path.exists() and not timeline.get("burn_subtitles", True):
             artifacts.append({
-                "filename": "captions.srt",
-                "mime_type": "application/x-subrip",
-                "asset_type": "subtitle",
+                "filename": "captions.srt", "mime_type": "application/x-subrip", "asset_type": "subtitle",
                 "content_base64": base64.b64encode(subtitle_path.read_bytes()).decode("ascii"),
                 "license_metadata": {"source": "user_project"},
             })
         return {
             "artifacts": artifacts,
             "result_payload": {"duration_seconds": total_duration, "width": width, "height": height, "format": "mp4"},
-            "metadata": {"engine": "self-hosted-ffmpeg", "renderer": "libx264+aac"},
+            "metadata": {"engine": "self-hosted-ffmpeg", "renderer": "libx264+aac", "timeline_mode": "positioned-multitrack"},
         }
 
 
