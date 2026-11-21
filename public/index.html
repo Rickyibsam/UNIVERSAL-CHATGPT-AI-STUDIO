@@ -142,7 +142,7 @@ body.editor-mode .layout>main{height:100%}
 <label class="btn secondary" for="editorFiles">＋ Add media</label><input id="editorFiles" type="file" accept="video/*,image/*,audio/*" multiple hidden>
 <button class="btn secondary" id="editorPlay">▶ Play preview</button><button class="btn secondary" id="editorPause">Ⅱ Pause</button>
 <button class="btn secondary" id="editorUndo">↶ Undo</button><button class="btn secondary" id="editorRedo">↷ Redo</button>
-<button class="btn" id="editorSave">Save edit project</button><button class="btn" id="editorRender">Render final MP4</button><button class="btn secondary" id="editorExport">Export edit JSON</button>
+<button class="btn" id="editorSave">Save edit project</button><label class="hint" for="editorFps">FPS <select id="editorFps" style="width:auto;padding:7px"><option value="24">24</option><option value="25">25</option><option value="30" selected>30</option><option value="50">50</option><option value="60">60</option></select></label><button class="btn" id="editorRender">Render final MP4</button><button class="btn secondary" id="editorExport">Export edit JSON</button>
 </div>
 <div class="editor-shell">
 <div>
@@ -654,7 +654,7 @@ $e('editorFiles').addEventListener('change',ev=>{
   const kind=file.type.startsWith('video/')?'video':file.type.startsWith('image/')?'image':file.type.startsWith('audio/')?'audio':null;
   if(!kind)continue;
   const url=URL.createObjectURL(file);state.urls.push(url);remember();
-  const c={id:'clip-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name:file.name,kind,url,file,assetId:null,mime:file.type,size:file.size,track:kind==='audio'?'audio':'video',start:state.clips.reduce((m,x)=>Math.max(m,x.start+x.trimOut-x.trimIn),0),trimIn:0,trimOut:kind==='image'?5:kind==='audio'?30:Math.min(30,Number.isFinite(file.duration)?file.duration:30),speed:1,volume:1,filter:'none',transition:'None',fade:0,text:'',textSize:34,textPosition:'top'};
+  const c={id:'clip-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name:file.name,kind,url,file,assetId:null,mime:file.type,size:file.size,track:kind==='audio'?'audio':'video',start:state.clips.reduce((m,x)=>Math.max(m,x.start+x.trimOut-x.trimIn),0),trimIn:0,trimOut:kind==='image'?5:kind==='audio'?30:Math.min(30,Number.isFinite(file.duration)?file.duration:30),frameRate:editorFps(),speed:1,volume:1,filter:'none',transition:'None',fade:0,text:'',textSize:34,textPosition:'top'};
   state.clips.push(c);state.selected=c.id;
  }
  render();if(state.selected)select(state.selected);
@@ -662,11 +662,19 @@ $e('editorFiles').addEventListener('change',ev=>{
  ev.target.value='';
 });
 $e('editorSelected').addEventListener('change',e=>{state.selected=e.target.value||null;render();if(state.selected)select(state.selected);});
+const editorFps=()=>Math.max(12,Math.min(60,Number($e('editorFps')?.value)||30));
+const snapFrame=value=>Math.round(Number(value||0)*editorFps())/editorFps();
+$e('editorFps').addEventListener('change',()=>{
+ const next=editorFps(),old=Number(window.__studioEditor?.manifest().canvas.frame_rate)||30;
+ remember();for(const c of state.clips){c.start=snapFrame(c.start);c.trimIn=snapFrame(c.trimIn);c.trimOut=Math.max(c.trimIn+1/next,snapFrame(c.trimOut));c.frameRate=next;c.keyframes=(c.keyframes||[]).map(k=>({...k,frame:Math.round(Number(k.frame||0)*next/old)}));}
+ $e('editorPlayhead').step=String(1/next);for(const id of ['editorStart','editorTrimIn','editorTrimOut'])$e(id).step=String(1/next);
+ render();if(current())select(current().id);status('Timeline quantized to '+next+' fps. Clip edges and keyframes are frame-aligned.');
+});
 $e('editorApplyTiming').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
- const start=Number($e('editorStart').value),ti=Number($e('editorTrimIn').value),to=Number($e('editorTrimOut').value);
+ const start=snapFrame($e('editorStart').value),ti=snapFrame($e('editorTrimIn').value),to=snapFrame($e('editorTrimOut').value);
  if(![start,ti,to].every(Number.isFinite)||start<0||ti<0||to<=ti)return status('Timing invalid: trim out must be greater than trim in.');
- remember();Object.assign(c,{track:$e('editorTrack').value,start,trimIn:ti,trimOut:to});render();status('Clip timing updated.');
+ remember();Object.assign(c,{track:$e('editorTrack').value,start,trimIn:ti,trimOut:to,frameRate:editorFps()});render();select(c.id);status('Clip timing snapped to frame '+Math.round(start*editorFps())+' at '+editorFps()+' fps.');
 });
 $e('editorApplyEffects').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
@@ -676,11 +684,11 @@ $e('editorApplyEffects').addEventListener('click',()=>{
 });
 $e('editorAddKeyframe').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
- if(c.kind==='audio')return status('Opacity keyframes are available for video and image clips only.');
- const frame=Math.max(0,Math.round((Number($e('editorPlayhead').value)-Number(c.start||0))*30));
- const point={frame,opacity:Number($e('editorOpacity').value)};
- remember();c.keyframes=[...(c.keyframes||[]).filter(k=>Number(k.frame)!==frame),point].sort((a,b)=>a.frame-b.frame);
- select(c.id);status('Keyframe saved at frame '+frame+' (30fps). Opacity animates between saved keyframes in final MP4.');
+ if(c.kind==='audio')return status('Opacity and scale keyframes are available for video and image clips only.');
+ const localTime=Math.max(0,Number($e('editorPlayhead').value)-Number(c.start||0)),frame=Math.max(0,Math.round(localTime*editorFps()));
+ const point={frame,opacity:Number($e('editorOpacity').value),scale:Number($e('editorScale').value)||100};
+ remember();c.frameRate=editorFps();c.keyframes=[...(c.keyframes||[]).filter(k=>Number(k.frame)!==frame),point].sort((a,b)=>a.frame-b.frame);
+ select(c.id);status('Opacity and scale keyframe saved at frame '+frame+' ('+editorFps()+' fps).');
 });
 $e('editorClearKeyframes').addEventListener('click',()=>{
  const c=current();if(!c)return status('Select a clip first.');
@@ -691,9 +699,13 @@ $e('editorApplyText').addEventListener('click',()=>{
  remember();Object.assign(c,{text:$e('editorTitle').value,sticker:$e('editorSticker').value,textSize:Math.max(12,Math.min(100,Number($e('editorTextSize').value)||34)),textPosition:$e('editorTextPosition').value});select(c.id);status('Text overlay saved for final MP4 rendering. Stickers remain preview-only.');
 });
 $e('editorSplit').addEventListener('click',()=>{
- const c=current(),at=Number($e('editorPlayhead').value);if(!c)return status('Select a clip first.');
- const duration=c.trimOut-c.trimIn;if(at<=0||at>=duration)return status('Move playhead inside the selected clip duration to split.');
- remember();const right={...c,id:'clip-'+Date.now()+'-split',start:c.start+at,trimIn:c.trimIn+at};c.trimOut=c.trimIn+at;state.clips.push(right);state.selected=right.id;render();select(right.id);status('Clip split into two editable segments.');
+ const c=current(),playhead=Number($e('editorPlayhead').value);if(!c)return status('Select a clip first.');
+ const localTime=snapFrame(playhead-Number(c.start||0)),speed=Math.max(.25,Math.min(4,Number(c.speed)||1)),sourceOffset=snapFrame(localTime*speed),duration=snapFrame(c.trimOut-c.trimIn);
+ if(localTime<=0||localTime>=duration/speed)return status('Move playhead inside the selected clip on the timeline.');
+ remember();const splitFrame=Math.round(localTime*editorFps()),originalTrimOut=c.trimOut;
+ const right={...c,id:'clip-'+Date.now()+'-split',start:snapFrame(c.start+localTime),trimIn:snapFrame(c.trimIn+sourceOffset),trimOut:originalTrimOut,keyframes:(c.keyframes||[]).filter(k=>Number(k.frame)>=splitFrame).map(k=>({...k,frame:Number(k.frame)-splitFrame}))};
+ c.trimOut=snapFrame(c.trimIn+sourceOffset);c.keyframes=(c.keyframes||[]).filter(k=>Number(k.frame)<=splitFrame);
+ state.clips.push(right);state.selected=right.id;render();select(right.id);status('Clip split on frame '+splitFrame+' at '+editorFps()+' fps. Keyframes were retained on their matching segments.');
 });
 $e('editorDuplicate').addEventListener('click',()=>{const c=current();if(!c)return status('Select a clip first.');remember();const copy={...c,id:'clip-'+Date.now()+'-copy',name:c.name+' copy',start:c.start+(c.trimOut-c.trimIn)};state.clips.push(copy);state.selected=copy.id;render();select(copy.id);status('Clip duplicated.');});
 $e('editorDelete').addEventListener('click',()=>{if(!current())return status('Select a clip first.');remember();state.clips=state.clips.filter(c=>c.id!==state.selected);state.selected=null;render();$e('editorStage').innerHTML='<div class="empty">Select another clip or add media.</div>';status('Selected clip deleted from edit list.');});
@@ -702,7 +714,7 @@ $e('editorPause').addEventListener('click',()=>{const v=$e('editorStage').queryS
 $e('editorAspect').addEventListener('change',()=>{const c=current();if(c)select(c.id);});
 $e('editorUndo').addEventListener('click',()=>{if(!state.history.length)return status('Nothing to undo.');state.future.push(snapshot());const s=JSON.parse(state.history.pop());state.clips=s.clips;state.selected=s.selected;render();if(state.selected)select(state.selected);status('Last edit undone.');});
 $e('editorRedo').addEventListener('click',()=>{if(!state.future.length)return status('Nothing to redo.');state.history.push(snapshot());const s=JSON.parse(state.future.pop());state.clips=s.clips;state.selected=s.selected;render();if(state.selected)select(state.selected);status('Edit restored.');});
-function manifest(){return {format:'universal-studio-edit-v2',created_at:new Date().toISOString(),canvas:{aspect_ratio:$e('editorAspect').value,resolution:$e('renderResolution')?.value||'1080',frame_rate:30},clips:state.clips.map(({url,file,...c})=>({...c,asset_id:c.assetId||null,source_url:null,source_note:c.assetId?'Stored in private cloud media':'Upload source media to persist this clip'})),tracks:['video','overlay','audio','sfx','subtitles'],render_status:'cloud_timeline_autosave_enabled'};}
+function manifest(){return {format:'universal-studio-edit-v2',created_at:new Date().toISOString(),canvas:{aspect_ratio:$e('editorAspect').value,resolution:$e('renderResolution')?.value||'1080',frame_rate:editorFps()},clips:state.clips.map(({url,file,...c})=>({...c,asset_id:c.assetId||null,source_url:null,source_note:c.assetId?'Stored in private cloud media':'Upload source media to persist this clip'})),tracks:['video','overlay','audio','sfx','subtitles'],render_status:'cloud_timeline_autosave_enabled'};}
 $e('editorExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(manifest(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='universal-studio-edit.json';a.click();URL.revokeObjectURL(url);status('Edit manifest exported. Source media files are not embedded in JSON.');});
 $e('editorSave').addEventListener('click',()=>{try{sessionStorage.setItem('studio-pro-editor-draft',JSON.stringify(manifest()));status('Local edit snapshot saved. If this production is a cloud project, the private timeline save will run as well.');}catch(e){status('Could not save editor draft: '+e.message);}});
 window.__studioEditor={state,manifest,render,select,load(clips){state.clips=Array.isArray(clips)?clips:[];state.selected=state.clips[0]?.id||null;render();if(state.selected)select(state.selected);}};window.addEventListener('beforeunload',()=>state.urls.forEach(URL.revokeObjectURL));
