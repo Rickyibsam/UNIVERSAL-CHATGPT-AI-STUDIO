@@ -28,7 +28,7 @@ logging.basicConfig(
 log = logging.getLogger("studio-worker")
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
-SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ENGINE_URL = os.getenv("STUDIO_ENGINE_URL", "").rstrip("/")
 ENGINE_TOKEN = os.getenv("STUDIO_ENGINE_TOKEN", "")
 BUCKET = os.getenv("STUDIO_STORAGE_BUCKET", "studio-media")
@@ -48,8 +48,8 @@ def utc_now() -> str:
 
 
 headers = {
-    "apikey": SERVICE_KEY,
-    "Authorization": f"Bearer {SERVICE_KEY}",
+    "apikey": os.getenv("SUPABASE_PUBLISHABLE_KEY", SERVICE_KEY),
+    "Authorization": f"Bearer {SERVICE_KEY}" if SERVICE_KEY else "",
     "Content-Type": "application/json",
 }
 
@@ -129,8 +129,7 @@ async def upload_artifact(
     asset_id = str(uuid.uuid4())
     key = f"{job['project_id']}/{job['id']}/{asset_id}-{name}"
     upload_headers = {
-        "apikey": SERVICE_KEY,
-        "Authorization": f"Bearer {SERVICE_KEY}",
+        **headers,
         "Content-Type": mime,
         "x-upsert": "false",
     }
@@ -171,7 +170,7 @@ async def download_asset(client: httpx.AsyncClient, project_id: str, asset_id: s
         raise PermanentJobError("RENDER_ASSET_PATH_INVALID")
     response = await client.get(
         f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{quote(key, safe='/')}",
-        headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"},
+        headers=headers,
         timeout=HTTP_TIMEOUT,
     )
     response.raise_for_status()
