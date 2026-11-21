@@ -207,6 +207,7 @@ export function buildLitematicNbt(objects){
   writer.end();
   writer.compound("Regions");
   writer.compound("Universal Studio");
+  writer.int("DataVersion",0);
   writer.compound("Position");writer.int("x",minX);writer.int("y",minY);writer.int("z",minZ);writer.end();
   writer.compound("Size");writer.int("x",width);writer.int("y",height);writer.int("z",length);writer.end();
   writer.list("BlockStatePalette",10,states);
