@@ -200,7 +200,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
             progress = 10 + int(80 * (index + 1) / len(artifacts))
             await patch_job(client, job_id, {
                 "progress_percent": progress,
-                "heartbeat_at": "now()",
+                "heartbeat_at": utc_now(),
             })
         await patch_job(client, job_id, {
             "status": "success",
@@ -218,7 +218,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     except PermanentJobError as exc:
         await patch_job(client, job_id, {
             "status": "failed", "error_code": str(exc)[:80],
-            "error_message": str(exc)[:500], "finished_at": "now()",
+            "error_message": str(exc)[:500], "finished_at": utc_now(),
             "locked_at": None, "locked_by": None, "heartbeat_at": None,
         })
         log.error("job permanently failed id=%s code=%s", job_id, exc)
@@ -240,7 +240,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
         else:
             await patch_job(client, job_id, {
                 "status": "failed", "error_code": "JOB_FAILED",
-                "error_message": str(exc)[:500], "finished_at": "now()",
+                "error_message": str(exc)[:500], "finished_at": utc_now(),
                 "locked_at": None, "locked_by": None, "heartbeat_at": None,
             })
             log.exception("job failed id=%s", job_id)
