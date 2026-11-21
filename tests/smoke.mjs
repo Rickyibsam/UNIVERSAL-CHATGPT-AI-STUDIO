@@ -9,6 +9,8 @@ for (const [index, source] of scripts.entries()) {
   new vm.Script(source, { filename: `inline-script-${index}.js` });
 }
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
+const rendererSmoke = readFileSync(new URL('./renderer_smoke.py', import.meta.url), 'utf8');
+assert.ok(rendererSmoke.includes('4k-zoom') && rendererSmoke.includes('1080p-slide-chroma'), 'real 1080p and 4K FFmpeg render tests exist');
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
@@ -47,8 +49,6 @@ assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite pos
 assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
 assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
 assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');
-assert.ok(worker.includes('slide left') && worker.includes('slide right'), 'cloud renderer must support slide transitions');
-assert.ok(worker.includes('transition == "zoom"'), 'cloud renderer must support zoom transitions');
 assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue screen removal');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
