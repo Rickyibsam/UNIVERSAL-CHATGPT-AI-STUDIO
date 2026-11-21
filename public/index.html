@@ -663,10 +663,11 @@ $e('editorFiles').addEventListener('change',ev=>{
 });
 $e('editorSelected').addEventListener('change',e=>{state.selected=e.target.value||null;render();if(state.selected)select(state.selected);});
 const editorFps=()=>Math.max(12,Math.min(60,Number($e('editorFps')?.value)||30));
+let editorTimebase=editorFps();
 const snapFrame=value=>Math.round(Number(value||0)*editorFps())/editorFps();
 $e('editorFps').addEventListener('change',()=>{
- const next=editorFps(),old=Number(window.__studioEditor?.manifest().canvas.frame_rate)||30;
- remember();for(const c of state.clips){c.start=snapFrame(c.start);c.trimIn=snapFrame(c.trimIn);c.trimOut=Math.max(c.trimIn+1/next,snapFrame(c.trimOut));c.frameRate=next;c.keyframes=(c.keyframes||[]).map(k=>({...k,frame:Math.round(Number(k.frame||0)*next/old)}));}
+ const next=editorFps(),old=editorTimebase;
+ remember();for(const c of state.clips){c.start=snapFrame(c.start);c.trimIn=snapFrame(c.trimIn);c.trimOut=Math.max(c.trimIn+1/next,snapFrame(c.trimOut));c.frameRate=next;c.keyframes=(c.keyframes||[]).map(k=>({...k,frame:Math.round(Number(k.frame||0)*next/old)}));}editorTimebase=next;
  $e('editorPlayhead').step=String(1/next);for(const id of ['editorStart','editorTrimIn','editorTrimOut'])$e(id).step=String(1/next);
  render();if(current())select(current().id);status('Timeline quantized to '+next+' fps. Clip edges and keyframes are frame-aligned.');
 });
