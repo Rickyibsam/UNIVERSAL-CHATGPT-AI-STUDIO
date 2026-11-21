@@ -23,7 +23,7 @@ function rotateXZ(x,z,turns){
   if(t===3)return [z,-x];
   return [x,z];
 }
-function objectBlocks(item){
+export function objectBlocks(item){
   const type=String(item.type||"").toLowerCase(),out=[];
   const push=(x,y,z,state)=>out.push({x,y,z,state});
   if(item.blockState){push(0,0,0,String(item.blockState));}
