@@ -560,7 +560,7 @@ window.__worldStudio={
  manifest(){return {world_type:$('worldMode').value,location:$('worldLocation').value,weather:$('worldWeather').value,objects:worldObjects.map(x=>({...x}))};},
  renderList:renderWorldObjects,
  setScene(data){const scene=data||{};$('worldMode').value=scene.world_type||'Realistic 3D location';$('worldLocation').value=scene.location||'';$('worldWeather').value=scene.weather||'Sunny · Day';worldObjects.splice(0,worldObjects.length,...(Array.isArray(scene.objects)?scene.objects.slice(0,100).map(x=>({...x})):[]));selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));},
- select(id){selectedWorldObjectId=id;renderWorldObjects();},
+ select(id){selectedWorldObjectId=id;renderWorldObjects();window.__worldStudioHighlight?.(id);},
  removeSelected(){const index=worldObjects.findIndex(x=>x.id===selectedWorldObjectId);if(index>=0){worldObjects.splice(index,1);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}},
  clear(){worldObjects.splice(0,worldObjects.length);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}
 };
