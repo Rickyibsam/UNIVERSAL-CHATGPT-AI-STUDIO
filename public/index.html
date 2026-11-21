@@ -426,9 +426,7 @@ $('downloadRenderKitBtn').addEventListener('click',async()=>{
  ps.push('New-Item -ItemType Directory -Force -Path $workDir | Out-Null');
  ps.push('Write-Host "Downloading project media. Signed links expire in about one hour."');
  inputDefs.forEach(x=>{ps.push('Invoke-WebRequest -Uri '+psQuote(x.url)+' -OutFile (Join-Path $workDir '+psQuote(x.localName));});
- ps.push("[System.IO.File]::WriteAllText((Join-Path $workDir 'subtitles.srt'), @'
-"+srt+"
-'@, [System.Text.UTF8Encoding]::new($false))");
+ ps.push("[System.IO.File]::WriteAllText((Join-Path $workDir 'subtitles.srt'), "+psQuote(srt)+", [System.Text.UTF8Encoding]::new($false))");
  ps.push('$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue; if (-not $ffmpeg) { throw "FFmpeg is not installed or not on PATH. Install FFmpeg and reopen PowerShell." }');
  ps.push('$argsList = @('+args.join(',')+", '-filter_complex', "+psQuote(filter)+", '-map', '[vout]'"+(audioInput.length?", '-map', '[aout]'":", '-an")+", '-t', "+psQuote(String(total))+", '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p'"+(audioInput.length?", '-c:a', 'aac', '-b:a', '192k'":"")+", (Join-Path $workDir 'final_video.mp4'))");
  ps.push('& ffmpeg @argsList');
