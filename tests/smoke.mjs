@@ -18,7 +18,7 @@ const worldEditor = readFileSync(new URL('../public/world-3d.js', import.meta.ur
 execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldEditor, stdio: ['pipe', 'ignore', 'pipe'] });
 const worldMigration = readFileSync(new URL('../supabase/migrations/20261121174500_world_scenes.sql', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
-assert.ok(cloudEditor.includes('__studioCloudLoadManifest') && html.includes('window.__studioCloudLoadManifest?.(s.editor)'), 'project recovery must restore saved cloud media and editor settings');
+assert.ok(cloudEditor.includes('__studioCloudLoadManifest') && html.includes('window.__studioCloudLoadManifest?.(s.editor)') && html.includes('setFrameRate(value)'), 'project recovery must restore cloud media, editor settings and frame rate');
 const requiredIds = [
   'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
