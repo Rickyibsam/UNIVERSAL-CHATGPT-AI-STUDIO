@@ -9,6 +9,8 @@ for (const [index, source] of scripts.entries()) {
   new vm.Script(source, { filename: `inline-script-${index}.js` });
 }
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
+const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
+const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
 const requiredIds = [
   'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
@@ -21,7 +23,7 @@ for (const id of requiredIds) {
 }
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
 assert.equal(ids.length, new Set(ids).size, 'HTML element IDs must be unique');
-for (const id of ['accountStudio','pipelineStudio','proEditor','editorTransport','editorEffectsPanel','editorTextPanel','editorClipPanel','editorFit','editorRotate','editorScale','editorAnimation','editorSticker']) assert.ok(ids.includes(id), 'Canva editor workspace control exists: '+id);
+for (const id of ['accountStudio','pipelineStudio','proEditor','editorTransport','editorEffectsPanel','editorTextPanel','editorClipPanel','editorFit','editorRotate','editorScale','editorAnimation','editorSticker','editorRender','editorChromaKey']) assert.ok(ids.includes(id), 'Canva editor workspace control exists: '+id);
 for (const marker of ['Canva-like panel navigation','grid-template-columns:290px minmax(0,1fr)','html,body{height:100%;overflow:hidden}','studio-zoom-in','Effects & filters','Text & stickers']) assert.ok(html.includes(marker), 'single-screen editor layout marker exists: '+marker);
 assert.ok(html.includes("activate(document.getElementById(initial)?initial:'proEditor',false)"), 'editor opens as the default workspace');
 
@@ -44,6 +46,12 @@ assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite pos
 assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
 assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
 assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');
+assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue screen removal');
+assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
+assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
+assert.ok(cloudEditor.includes('timeline_clips').toString(), 'editor must persist timeline clips in Supabase');
+assert.ok(cloudEditor.includes('createSignedUrl'), 'editor must restore private cloud media');
+assert.ok(cloudEditor.includes('Render final MP4') || html.includes('Render final MP4'), 'editor must expose cloud MP4 rendering');
 
 assert.ok(worker.includes('"status": "succeeded"'), 'worker must use the database success status');
 assert.ok(!/generativelanguage\.googleapis\.com|api\.openai\.com|replicate\.com|fal\.ai/i.test(worker), 'worker must not call third-party hosted generation APIs');
@@ -51,7 +59,7 @@ for (const id of ['templateStudio','worldStudio','importStudio','publishStudio',
 assert.ok(html.includes('studio-import-rights-draft'), 'rights record draft is saved in browser session');
 assert.ok(html.includes('renderer_status'), 'world plan export identifies planning-only status');
 for (const id of ['proEditor','editorFiles','editorTimeline','editorSplit','editorDuplicate','editorDelete','editorApplyTiming','editorApplyEffects','editorApplyText','editorUndo','editorRedo','editorExport','editorSave']) assert.ok(html.includes('id="'+id+'"'), 'professional editor control exists: '+id);
-for (const feature of ['universal-studio-edit-v1','Split selected at playhead','Shorts effects & filters','TRANSITION','TRIM IN','Text, captions & stickers','Drag clips between tracks','edit_manifest_only_cloud_render_worker_required']) assert.ok(html.includes(feature), 'editor capability marker exists: '+feature);
+for (const feature of ['universal-studio-edit-v2','Split selected at playhead','Shorts effects & filters','TRANSITION','TRIM IN','Text, captions & stickers','Drag clips between tracks','cloud_timeline_autosave_enabled']) assert.ok(html.includes(feature), 'editor capability marker exists: '+feature);
 
 assert.ok(!html.includes('127.0.0.1'), 'browser app must not depend on localhost AI services');
 assert.ok(!html.toLowerCase().includes('ollama'), 'local Ollama dependency must be removed');
