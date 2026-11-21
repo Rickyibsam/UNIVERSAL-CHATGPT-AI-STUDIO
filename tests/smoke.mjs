@@ -11,6 +11,7 @@ for (const [index, source] of scripts.entries()) {
 const worker = readFileSync(new URL('../worker/worker.py', import.meta.url), 'utf8');
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
+new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
 const requiredIds = [
   'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
@@ -49,7 +50,7 @@ assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transi
 assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue screen removal');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
-assert.ok(cloudEditor.includes('timeline_clips').toString(), 'editor must persist timeline clips in Supabase');
+assert.ok(cloudEditor.includes('timeline_clips'), 'editor must persist timeline clips in Supabase');
 assert.ok(cloudEditor.includes('createSignedUrl'), 'editor must restore private cloud media');
 assert.ok(cloudEditor.includes('Render final MP4') || html.includes('Render final MP4'), 'editor must expose cloud MP4 rendering');
 
