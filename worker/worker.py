@@ -213,6 +213,12 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     elif rotation == 180:
         filters.append("hflip,vflip")
     fit = str(clip.get("fit") or "contain")
+    chroma = str(clip.get("chroma_key") or "off").lower()
+    if chroma in ("green", "blue"):
+        color = "0x00FF00" if chroma == "green" else "0x0000FF"
+        similarity = max(0.05, min(0.8, float(clip.get("chroma_similarity") or 0.25)))
+        blend = max(0.0, min(0.5, float(clip.get("chroma_blend") or 0.1)))
+        filters.append(f"chromakey={color}:{similarity:.3f}:{blend:.3f}")
     if fit == "cover":
         filters.append(f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}")
     else:
