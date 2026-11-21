@@ -52,6 +52,8 @@ assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transi
 assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue screen removal');
 assert.ok(worker.includes('keyframe_value_expression'), 'cloud renderer must apply opacity keyframes');
 assert.ok(html.includes('editorAddKeyframe'), 'editor must expose keyframe controls');
+assert.ok(html.includes('queueProjectAutosave'), 'cloud project fields and scenes must autosave');
+assert.ok(html.includes('Automatic recovery snapshot'), 'cloud project autosave must create recovery versions');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
 assert.ok(cloudEditor.includes('timeline_clips'), 'editor must persist timeline clips in Supabase');
