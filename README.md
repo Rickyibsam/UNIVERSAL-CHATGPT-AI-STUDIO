@@ -24,13 +24,18 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [x] Supabase Auth, cloud projects, private project media and RLS-protected data tables.
 - [x] Scene/character editing, timeline data, subtitles export and project version snapshots.
 - [x] Supabase Edge Function `studio-gateway` deployed with JWT verification.
+- [x] Durable job-queue schema: retry schedule, attempt limits, worker locks/heartbeats, provider metadata and cost fields.
+- [x] Atomic `claim_studio_jobs` database function restricted to `service_role`; browser roles cannot claim jobs.
+- [x] Project-scoped locations and scene continuity fields for reusable visual references.
+- [x] Corrected timeline clip RLS checks so tracks, scenes and assets must belong to the same project.
 - [x] Cloud screenplay client wired to the gateway.
 - [ ] Add the `GEMINI_API_KEY` Supabase Edge Function secret to activate the free-tier Gemini text adapter.
 - [ ] Verify a real authenticated cloud screenplay request and confirm job persistence.
-- [ ] Cloud image generation adapter and private asset ingestion.
-- [ ] Cloud video provider adapters (Veo, Kling, Runway, MiniMax or alternatives), including provider-specific cost and quota gates.
-- [ ] Hosted background worker / job polling for long-running image/video/audio tasks.
-- [ ] Cloud voice and music generation adapters.
+- [ ] Cloud image generation adapter and private asset ingestion. Current Gemini image API pricing lists no free API tier; keep it disabled unless a genuinely free provider becomes available or the owner approves cost.
+- [ ] Cloud video provider adapters (Veo, Kling, Runway, MiniMax or alternatives), including provider-specific cost and quota gates. Current Veo API pricing has no free tier; paid calls remain disabled.
+- [ ] Hosted background worker / job polling to consume the new database queue, apply bounded exponential retry, recover stale locks and persist outputs.
+- [ ] Cloud voice generation adapter and private WAV ingestion. A current TTS API model needs provider-key activation and real authenticated verification.
+- [ ] Cloud music/SFX generation adapter. Current Lyria API pricing lists no free tier; paid calls remain disabled.
 - [ ] Hosted timeline renderer for MP4 export; browser-side local FFmpeg is not part of the target architecture.
 - [ ] Automated media QC, continuity checks, recovery tests and end-to-end workflow tests.
 
