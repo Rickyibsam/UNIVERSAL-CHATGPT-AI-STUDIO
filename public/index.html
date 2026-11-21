@@ -123,7 +123,7 @@ body.editor-mode .layout>main{height:100%}
 <div class="field full"><label for="storySetting">WORLD / LOCATION (OPTIONAL)</label><input id="storySetting" placeholder="e.g. a floating city above a glowing ocean"></div>
 <div class="field full"><label for="storyNotes">MUST INCLUDE / AVOID (OPTIONAL)</label><textarea id="storyNotes" placeholder="Add required events, facts, character relationships, words to avoid, or safety notes."></textarea></div>
 </div>
-<div class="actions"><button class="btn" id="realAiStoryBtn">✦ Generate screenplay with Cloud AI</button><span class="hint">Secure cloud generation · no laptop model required.</span></div>
+<div class="actions"><button class="btn" id="realAiStoryBtn">✦ Cloud AI screenplay (engine pending)</button><span class="hint">The self-hosted AI model is not deployed yet. Use the screenplay draft builder for a non-AI outline.</span></div>
 <div class="actions"><button class="btn" id="writeScreenplayBtn">✦ Generate full screenplay draft</button><button class="btn secondary" id="qualityCheckBtn">Run story quality check</button></div>
 <div id="storyOutput" class="empty" aria-live="polite">Your screenplay draft will appear here after generation.</div>
 </section><section class="panel" id="characterStudio"><h2>Character studio</h2><p class="desc">Create recurring characters and save their visual and voice continuity notes with each production.</p><div class="fieldgrid"><div class="field"><label for="characterName">CHARACTER NAME</label><input id="characterName" placeholder="e.g. Milo the little robot"></div><div class="field"><label for="characterVoice">VOICE PROFILE</label><input id="characterVoice" placeholder="e.g. cheerful, gentle, youthful"></div><div class="field full"><label for="characterDescription">APPEARANCE & PERSONALITY</label><textarea id="characterDescription" placeholder="Describe face, body, colors, clothing, age/style, personality and distinctive features."></textarea></div><div class="field full"><label for="characterContinuity">CONTINUITY RULES</label><input id="characterContinuity" placeholder="Same blue jacket, round eyes, height and voice in every scene"></div></div><div class="actions"><button class="btn secondary" id="addCharacterBtn">Add character</button></div><div id="characterList" class="empty">No characters added yet.</div></section>
@@ -456,6 +456,7 @@ async function loadVersions(){
 }
 $('loadVersionsBtn').addEventListener('click',loadVersions);
 $('realAiStoryBtn').addEventListener('click',async()=>{
+ $('storyOutput').textContent='Real AI screenplay generation is not active yet: the owner-operated inference engine has no installed model adapter. No generation job was queued. Use the screenplay draft builder for a structured non-AI outline.';return;
  const prompt=$('prompt').value.trim();if(!prompt){$('storyOutput').textContent='Enter your video idea first.';return;}
  const {data:{session}}=await sb.auth.getSession();if(!session){$('storyOutput').textContent='Sign in first to use Cloud AI.';return;}
  if(!currentPlan?.project_id){$('storyOutput').textContent='Save this production to your cloud projects first, then generate the screenplay.';return;}
