@@ -183,8 +183,10 @@ async def run_engine(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str
         result = response.json()
     except (httpx.TimeoutException, httpx.NetworkError) as exc:
         raise RetryableJobError("ENGINE_UNAVAILABLE") from exc
-    if not isinstance(result, dict) or not isinstance(result.get("artifacts"), list) or not result["artifacts"]:
-        raise PermanentJobError("ENGINE_RETURNED_NO_ARTIFACTS")
+    if not isinstance(result, dict):
+        raise PermanentJobError("INVALID_ENGINE_RESPONSE")
+    if not result.get("artifacts") and not result.get("result_payload"):
+        raise PermanentJobError("ENGINE_RETURNED_NO_OUTPUT")
     return result
 
 
@@ -194,7 +196,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
         await patch_job(client, job_id, {"progress_percent": 5, "heartbeat_at": utc_now()})
         result = await run_engine(client, job)
         ids: list[str] = []
-        artifacts = result["artifacts"]
+        artifacts = result.get("artifacts") or []
         for index, artifact in enumerate(artifacts):
             ids.append(await upload_artifact(client, job, artifact))
             progress = 10 + int(80 * (index + 1) / len(artifacts))
@@ -203,9 +205,10 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
                 "heartbeat_at": utc_now(),
             })
         await patch_job(client, job_id, {
-            "status": "success",
+            "status": "succeeded",
             "progress_percent": 100,
             "output_asset_ids": ids,
+            "result_payload": result.get("result_payload") or {},
             "provider_metadata": result.get("metadata", {}),
             "finished_at": utc_now(),
             "locked_at": None,
