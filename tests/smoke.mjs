@@ -47,6 +47,9 @@ assert.ok(worker.includes('async def render_timeline'), 'private worker must imp
 assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle burn-in');
 assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
 assert.ok(worker.includes('def render_filter_chain'), 'cloud renderer must map editor filter presets to FFmpeg filters');
+assert.ok(html.includes('id="editorFps"') && html.includes('frameRate:editorFps()') && html.includes('frame_rate:editorFps()'), 'timeline edits and exports must use selectable frame rates');
+assert.ok(html.includes('localTime*editorFps()') && html.includes('sourceOffset=snapFrame(localTime*speed)'), 'keyframes and split points must be clip-local and frame-snapped');
+assert.ok(worker.includes('scale_expr = keyframe_value_expression') && worker.includes('round(source_duration * fps) / fps'), 'renderer must apply animated scale and quantize clips to exact frames');
 assert.ok(worker.includes('def atempo_filters'), 'cloud renderer must support audio playback speed');
 assert.ok(worker.includes('drawtext=fontfile='), 'cloud renderer must burn clip title overlays');
 assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite positioned video and overlay tracks');
