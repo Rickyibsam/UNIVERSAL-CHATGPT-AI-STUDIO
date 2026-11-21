@@ -26,11 +26,11 @@ If Ollama is already running as a Windows service, update its environment throug
 3. Start ComfyUI bound to localhost and allow only the Studio origin for CORS. Current ComfyUI server documentation describes `--enable-cors-header`; use the exact origin above, not a wildcard, where supported.
 4. In ComfyUI, build and test a workflow for one task: image, video, speech, music or lip-sync.
 5. Export the workflow in **API format** (not the regular UI workflow format).
-6. Paste that JSON into the Studio Provider Connections panel. In the text node that receives your prompt, replace its prompt value with the literal placeholder `{{PROMPT}}`. Optional placeholders are `{{NEGATIVE_PROMPT}}`, `{{SEED}}` and `{{DURATION}}`.
+6. Paste that JSON into the Studio Provider Connections panel. In the text node that receives your prompt, replace its prompt value with the literal placeholder `{{PROMPT}}`. Optional placeholders are `{{NEGATIVE_PROMPT}}`, `{{SEED}}`, `{{DURATION}}`, `{{WIDTH}}` and `{{HEIGHT}}`. For reference-conditioned workflows, select a project image in the Studio and use `{{REFERENCE_IMAGE}}` as the `LoadImage` node's image filename; connect that node to your model's IP-Adapter, ControlNet or reference-conditioning path.
 7. Choose the generation type, enter the shot/audio prompt, save settings and run the local workflow.
 8. When ComfyUI finishes and returns supported output nodes, the Studio downloads the output and saves it to the signed-in project's private media library.
 
-The workflow JSON must be valid for your installed ComfyUI version and custom nodes. Different image, video, TTS, music and lip-sync models require different workflows. The Studio cannot guess a valid graph for every custom node pack.
+The Studio pre-fills a basic text-to-image graph. Replace `YOUR_CHECKPOINT.safetensors` with the exact checkpoint filename installed in your ComfyUI models/checkpoints folder before running it. The workflow JSON must be valid for your installed ComfyUI version and custom nodes. Different image, video, TTS, music and lip-sync models require different workflows. The Studio cannot guess a valid graph for every custom node pack.
 
 ComfyUI API reference: https://github.com/Comfy-Org/docs/blob/main/development/comfyui-server/comms_routes.mdx
 
