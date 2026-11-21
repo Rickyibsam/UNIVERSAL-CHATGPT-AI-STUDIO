@@ -240,7 +240,7 @@ $('saveBtn').addEventListener('click',async()=>{
  for(const old of (oldScenes||[])){if(!currentPlan.scenes.some(s=>s.id===old.id)){await sb.from('scenes').delete().eq('id',old.id).eq('project_id',projectId);}}
  setAuthStatus('Project, characters and scenes saved. Your existing project was updated rather than duplicated.');
  await loadCloudProjects();await ensureTimelineTracks();
- const editorSaved=await window.__studioCloudSave?.();
+ const editorSaved=await window.__studioCloudSave?.();await window.__worldStudioSave?.();
  const {data:lastVersion,error:versionLookupError}=await sb.from('project_versions').select('version_number,created_at').eq('project_id',projectId).order('version_number',{ascending:false}).limit(1).maybeSingle();
  if(editorSaved!==false&&!versionLookupError&&(!lastVersion||Date.now()-new Date(lastVersion.created_at).getTime()>10*60*1000)){
   const {data:{user}}=await sb.auth.getUser();
@@ -431,7 +431,7 @@ $('exportSubsBtn').addEventListener('click',()=>{
  const vtt='WEBVTT\n\n'+cues.map((x,i)=>(i+1)+'\n'+stamp(x.start)+' --> '+stamp(x.end)+'\n'+x.text).join('\n\n');
  downloadText(vtt,'subtitles.vtt','text/vtt');$('timelineStatus').textContent='Subtitle file exported. Review timing and translation before publishing.';
 });
-function snapshotNow(){return {title:currentPlan.title,prompt:currentPlan.prompt,format:currentPlan.format,style:currentPlan.style,duration:currentPlan.duration,duration_seconds:currentPlan.duration_seconds,language:currentPlan.language,voice:currentPlan.voice,quality:currentPlan.quality,genre:currentPlan.genre,audience:currentPlan.audience,tone:currentPlan.tone,ending:currentPlan.ending,setting:currentPlan.setting,notes:currentPlan.notes,characters:characterDrafts.map(x=>({...x})),scenes:currentPlan.scenes.map(x=>({...x})),editor:window.__studioEditor?.manifest()||null};}
+function snapshotNow(){return {title:currentPlan.title,prompt:currentPlan.prompt,format:currentPlan.format,style:currentPlan.style,duration:currentPlan.duration,duration_seconds:currentPlan.duration_seconds,language:currentPlan.language,voice:currentPlan.voice,quality:currentPlan.quality,genre:currentPlan.genre,audience:currentPlan.audience,tone:currentPlan.tone,ending:currentPlan.ending,setting:currentPlan.setting,notes:currentPlan.notes,characters:characterDrafts.map(x=>({...x})),scenes:currentPlan.scenes.map(x=>({...x})),editor:window.__studioEditor?.manifest()||null,world:window.__worldStudio?.manifest()||null};}
 $('saveVersionBtn').addEventListener('click',async()=>{
  if(!requireCloudProject())return;
  const {data:versions,error}=await sb.from('project_versions').select('version_number').eq('project_id',currentPlan.project_id).order('version_number',{ascending:false}).limit(1);
@@ -451,7 +451,7 @@ async function loadVersions(){
   const version=data.find(x=>x.id===b.dataset.id);if(!version||!confirm('Load this snapshot into the editor? Current unsaved edits will be replaced in the browser.'))return;
   const s=version.snapshot;const restoredProjectId=currentPlan.project_id;currentPlan={...s,project_id:restoredProjectId};characterDrafts.splice(0,characterDrafts.length,...(s.characters||[]));renderCharacters();
   $('prompt').value=s.prompt||'';$('format').value=s.format||'16:9';$('style').value=s.style||'3D Animation';$('duration').value=s.duration||'60 seconds';$('language').value=s.language||'English';buildPlan();currentPlan.project_id=restoredProjectId;if(s.scenes?.length){currentPlan.scenes=s.scenes;$('scenes').innerHTML=s.scenes.map((x,i)=>'<article class="scene"><div class="sceneNo">0'+(i+1)+'</div><div><h3>'+escapeHtml(x.title)+'</h3><textarea class="scene-edit" data-scene-index="'+i+'">'+escapeHtml(x.description)+'</textarea></div></article>').join('');}
-  if(s.editor)window.__studioCloudLoadManifest?.(s.editor);$('timelineStatus').textContent='Snapshot loaded into editor. Save it as a new recovery point after review.';
+  if(s.editor)window.__studioCloudLoadManifest?.(s.editor);if(s.world)window.__worldStudio?.setScene(s.world);$('timelineStatus').textContent='Snapshot loaded into editor. Save it as a new recovery point after review.';
  }));
 }
 $('loadVersionsBtn').addEventListener('click',loadVersions);
@@ -549,17 +549,35 @@ document.querySelectorAll('.use-template').forEach(button=>button.addEventListen
  $('production').scrollIntoView({behavior:'smooth'});
 }));
 const worldObjects=[];
-function renderWorldObjects(){ $('worldObjectList').innerHTML=worldObjects.length?worldObjects.map((x,i)=>'<span class="scene-object">'+escapeHtml(x.type)+' · '+(i+1)+'</span>').join(''):'<span class="muted">No scene objects added yet.</span>'; }
+let selectedWorldObjectId=null;
+function renderWorldObjects(){
+ $('worldObjectList').innerHTML=worldObjects.length?worldObjects.map((x,i)=>'<button class="world-object '+(x.id===selectedWorldObjectId?'selected':'')+'" data-world-id="'+escapeHtml(x.id)+'">'+escapeHtml(x.type)+' · '+(i+1)+'</button>').join(''):'<span class="muted">No scene objects added yet.</span>';
+}
+window.__worldStudio={
+ objects:worldObjects,
+ get projectId(){return currentPlan?.project_id||null;},
+ manifest(){return {world_type:$('worldMode').value,location:$('worldLocation').value,weather:$('worldWeather').value,objects:worldObjects.map(x=>({...x}))};},
+ renderList:renderWorldObjects,
+ setScene(data){const scene=data||{};$('worldMode').value=scene.world_type||'Realistic 3D location';$('worldLocation').value=scene.location||'';$('worldWeather').value=scene.weather||'Sunny · Day';worldObjects.splice(0,worldObjects.length,...(Array.isArray(scene.objects)?scene.objects.slice(0,100).map(x=>({...x})):[]));selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));},
+ select(id){selectedWorldObjectId=id;renderWorldObjects();},
+ removeSelected(){const index=worldObjects.findIndex(x=>x.id===selectedWorldObjectId);if(index>=0){worldObjects.splice(index,1);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}},
+ clear(){worldObjects.splice(0,worldObjects.length);selectedWorldObjectId=null;renderWorldObjects();window.dispatchEvent(new Event('studio-world-changed'));}
+};
+$('worldObjectList').addEventListener('click',e=>{const b=e.target.closest('[data-world-id]');if(b)window.__worldStudio.select(b.dataset.worldId);});
 $('addWorldObject').addEventListener('click',()=>{
- const item={type:$('worldObjects').value,world:$('worldMode').value,location:$('worldLocation').value.trim(),weather:$('worldWeather').value};
- worldObjects.push(item);renderWorldObjects();
+ const n=worldObjects.length,item={id:crypto.randomUUID(),type:$('worldObjects').value,world:$('worldMode').value,location:$('worldLocation').value.trim(),weather:$('worldWeather').value,x:(n%5-2)*3,z:(Math.floor(n/5)-1)*3,scale:1,rotation:0};
+ worldObjects.push(item);selectedWorldObjectId=item.id;renderWorldObjects();
  $('worldPreviewLabel').textContent=$('worldMode').value+' · '+(item.location||'Custom location')+' · '+item.weather;
- $('worldStatus').textContent=worldObjects.length+' planned object(s) in this scene. Export the scene plan to save this layout as JSON.';
+ $('worldStatus').textContent=worldObjects.length+' 3D object(s) in the scene. Select objects in the list or canvas, then export GLB/JSON.';
+ window.dispatchEvent(new Event('studio-world-changed'));
 });
+$('removeWorldObject').addEventListener('click',()=>window.__worldStudio.removeSelected());
+$('clearWorldScene').addEventListener('click',()=>window.__worldStudio.clear());
+['worldMode','worldLocation','worldWeather'].forEach(id=>$(id).addEventListener('change',()=>window.dispatchEvent(new Event('studio-world-changed'))));
 $('downloadWorldPlan').addEventListener('click',()=>{
- const plan={format:'studio-world-scene-plan-v1',world_type:$('worldMode').value,location:$('worldLocation').value,weather:$('worldWeather').value,objects:worldObjects,renderer_status:'planning_only_no_3d_render_engine_connected'};
+ const plan={format:'studio-world-scene-v2',...window.__worldStudio.manifest(),renderer_status:'interactive_webgl_3d_editor'};
  downloadText(JSON.stringify(plan,null,2),'studio-world-scene-plan.json','application/json');
- $('worldStatus').textContent='Scene plan JSON exported. This is editable planning data, not a rendered 3D world.';
+ $('worldStatus').textContent='Editable 3D scene JSON exported.';
 });
 $('saveImportRecord').addEventListener('click',()=>{
  const record={source_platform:$('sourcePlatform').value,source_url:$('sourceUrl').value.trim(),rights_status:$('rightsStatus').value,proof_reference:$('rightsProof').value.trim(),permitted_use:$('reuseScope').value,purpose:$('importPurpose').value,recorded_at:new Date().toISOString()};
