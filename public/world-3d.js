@@ -28,7 +28,10 @@ else{
   }
   function createObject(item){
     const g=group(),type=String(item.type||"").toLowerCase();
-    if(type.includes("minecraft house"))voxelHouse(g);
+    if(type.includes("minecraft grass block"))addPart(g,box(1,1,1,palette.grass),0,.5,0);
+    else if(type.includes("minecraft stone block"))addPart(g,box(1,1,1,palette.stone),0,.5,0);
+    else if(type.includes("minecraft wood block"))addPart(g,box(1,1,1,palette.wood),0,.5,0);
+    else if(type.includes("minecraft house"))voxelHouse(g);
     else if(type.includes("minecraft mob")){
       addPart(g,box(1.3,1.3,.9,0x58a66b),0,1.15,0);
       addPart(g,box(.95,.9,.9,0x73bd7f),0,2.25,0);
