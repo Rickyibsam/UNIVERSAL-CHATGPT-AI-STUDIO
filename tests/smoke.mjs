@@ -21,6 +21,10 @@ for (const id of requiredIds) {
 }
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
 assert.equal(ids.length, new Set(ids).size, 'HTML element IDs must be unique');
+for (const id of ['accountStudio','pipelineStudio','proEditor','editorTransport','editorEffectsPanel','editorTextPanel','editorClipPanel','editorFit','editorRotate','editorScale','editorAnimation','editorSticker']) assert.ok(ids.includes(id), 'Canva editor workspace control exists: '+id);
+for (const marker of ['Canva-like panel navigation','grid-template-columns:290px minmax(0,1fr)','html,body{height:100%;overflow:hidden}','studio-zoom-in','Effects & filters','Text & stickers']) assert.ok(html.includes(marker), 'single-screen editor layout marker exists: '+marker);
+assert.ok(html.includes("activate(document.getElementById(initial)?initial:'proEditor',false)"), 'editor opens as the default workspace');
+
 assert.ok(!html.includes('service_role'), 'service role key must never be shipped to the browser');
 assert.ok(!html.includes('sb_secret_'), 'Supabase secret key must never be shipped to the browser');
 assert.ok(!html.includes('value="lipsync"'), 'lip-sync generation must remain disabled in the low-spec build');
