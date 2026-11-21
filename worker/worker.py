@@ -12,7 +12,6 @@ import json
 import logging
 import os
 import socket
-import time
 import uuid
 from typing import Any
 
@@ -36,6 +35,13 @@ HTTP_TIMEOUT = max(30, int(os.getenv("ENGINE_TIMEOUT_SECONDS", "1800")))
 
 if not ENGINE_URL:
     log.warning("STUDIO_ENGINE_URL is not configured; generation jobs will be retried safely.")
+
+from datetime import datetime, timedelta, timezone
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 
 headers = {
     "apikey": SERVICE_KEY,
@@ -185,7 +191,7 @@ async def run_engine(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str
 async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     job_id = job["id"]
     try:
-        await patch_job(client, job_id, {"progress_percent": 5, "heartbeat_at": "now()"})
+        await patch_job(client, job_id, {"progress_percent": 5, "heartbeat_at": utc_now()})
         result = await run_engine(client, job)
         ids: list[str] = []
         artifacts = result["artifacts"]
@@ -201,7 +207,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
             "progress_percent": 100,
             "output_asset_ids": ids,
             "provider_metadata": result.get("metadata", {}),
-            "finished_at": "now()",
+            "finished_at": utc_now(),
             "locked_at": None,
             "locked_by": None,
             "heartbeat_at": None,
@@ -222,7 +228,6 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
         retryable = bool(job.get("retryable", True))
         if retryable and attempts < max_attempts:
             delay = min(3600, 15 * (2 ** max(0, attempts - 1)))
-            from datetime import datetime, timedelta, timezone
             retry_at = (datetime.now(timezone.utc) + timedelta(seconds=delay)).isoformat()
             await patch_job(client, job_id, {
                 "status": "queued", "available_at": retry_at,
