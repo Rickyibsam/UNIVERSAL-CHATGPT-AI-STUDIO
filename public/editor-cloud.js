@@ -50,13 +50,16 @@ async function renderMp4(){
   const {data:{session}}=await sb.auth.getSession();if(!session)throw Error("Sign in before rendering.");
   const response=await fetch(SUPABASE_URL+"/functions/v1/studio-gateway",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":"Bearer "+session.access_token},body:JSON.stringify({action:"render-video",project_id:pid(),timeline:{width,height,fps,clips:renderClips}})});
   const queued=await response.json();if(!response.ok)throw Error(queued.message||queued.error||"Could not queue MP4 render.");
-  say("Render queued · "+queued.job_id);
+  const renderer="https://universal-studio-renderer.onrender.com";
+  const start=await fetch(renderer+"/jobs/"+queued.job_id+"/run",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},body:JSON.stringify({project_id:pid()})});
+  const started=await start.json();if(!start.ok)throw Error(started.detail||"Cloud renderer could not accept the job.");
+  say("Render accepted by cloud renderer · "+queued.job_id);
   let job=null;
-  for(let i=0;i<180;i++){
+  for(let i=0;i<450;i++){
    await new Promise(r=>setTimeout(r,2000));
-   const q=await sb.from("generation_jobs").select("status,progress_percent,result_payload,error_message").eq("id",queued.job_id).eq("project_id",pid()).single();
-   if(q.error)throw Error("Render job status unavailable: "+q.error.message);
-   job=q.data;say("Cloud render · "+job.status+" · "+Number(job.progress_percent||0)+"% · "+queued.job_id);
+   const q=await fetch(renderer+"/jobs/"+queued.job_id+"?project_id="+encodeURIComponent(pid()),{headers:{"Authorization":"Bearer "+session.access_token}});
+   if(!q.ok)throw Error("Cloud renderer status unavailable ("+q.status+").");
+   job=await q.json();say("Cloud render · "+job.status+" · "+Number(job.progress_percent||0)+"% · "+queued.job_id);
    if(job.status==="succeeded")break;
    if(job.status==="failed"||job.status==="cancelled")throw Error(job.error_message||"Render "+job.status);
   }
