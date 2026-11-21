@@ -39,7 +39,7 @@ for (const id of requiredIds) {
 }
 const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
 assert.equal(ids.length, new Set(ids).size, 'HTML element IDs must be unique');
-for (const id of ['accountStudio','pipelineStudio','proEditor','editorTransport','editorEffectsPanel','editorTextPanel','editorClipPanel','editorFit','editorRotate','editorScale','editorAnimation','editorSticker','editorRender','editorChromaKey']) assert.ok(ids.includes(id), 'Canva editor workspace control exists: '+id);
+for (const id of ['accountStudio','pipelineStudio','proEditor','editorTransport','editorEffectsPanel','editorTextPanel','editorClipPanel','editorFit','editorRotate','editorScale','editorAnimation','editorSticker','editorRender','editorChromaKey','editorAddSubscribeCard']) assert.ok(ids.includes(id), 'Canva editor workspace control exists: '+id);
 for (const marker of ['Canva-like panel navigation','grid-template-columns:290px minmax(0,1fr)','html,body{height:100%;overflow:hidden}','studio-zoom-in','Effects & filters','Text & stickers']) assert.ok(html.includes(marker), 'single-screen editor layout marker exists: '+marker);
 assert.ok(html.includes("activate(document.getElementById(initial)?initial:'proEditor',false)"), 'editor opens as the default workspace');
 
@@ -74,6 +74,9 @@ assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue
 assert.ok(worker.includes('keyframe_value_expression'), 'cloud renderer must apply opacity keyframes');
 assert.ok(worker.includes('upload_file_artifact') && !worker.includes('base64.b64encode(output.read_bytes())'), 'rendered MP4 must stream to Storage without base64 buffering');
 assert.ok(html.includes('editorAddKeyframe'), 'editor must expose keyframe controls');
+assert.ok(html.includes('THANKS FOR WATCHING!') && html.includes('PLEASE SUBSCRIBE'), 'subscribe end card includes requested closing copy');
+assert.ok(html.includes("badge(cx-gap,'like'") && html.includes("badge(cx+gap,'bell'"), 'subscribe end card draws like and notification bell icons');
+assert.ok(html.includes("trimOut:5") && html.includes("name:'Thanks & Subscribe end card'"), 'subscribe end card is a five-second timeline image clip');
 assert.ok(html.includes('worldCanvas') && html.includes('exportWorldGlb'), 'interactive 3D world canvas and GLB export controls exist');
 assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTransform'), 'voxel block placement and object transform controls exist');
 assert.ok(html.includes('isBlock?(n%16)-8') && html.includes('Math.round(Number(patch.x)||0)'), 'Minecraft blocks must use integer one-unit voxel coordinates');
