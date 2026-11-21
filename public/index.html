@@ -523,6 +523,9 @@ async function generateVideoFromPrompt(){
   out.textContent='Submitting your video generation request to the private cloud queue…';
   const res=await fetch(SUPABASE_URL+'/functions/v1/studio-gateway',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'generate-video',project_id:currentPlan.project_id,prompt,settings})});
   const queued=await res.json();if(!res.ok)throw new Error(queued.message||queued.error||'Could not queue video generation');
+  const runResponse=await fetch('https://universal-studio-renderer.onrender.com/jobs/'+encodeURIComponent(queued.job_id)+'/run',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},body:JSON.stringify({project_id:currentPlan.project_id})});
+  const runResult=await runResponse.json().catch(()=>({}));
+  if(!runResponse.ok)throw new Error(runResult.detail||runResult.message||'Cloud generation worker could not start the video job.');
   let job=null;
   for(let attempt=0;attempt<180;attempt++){
    await new Promise(resolve=>setTimeout(resolve,2000));
