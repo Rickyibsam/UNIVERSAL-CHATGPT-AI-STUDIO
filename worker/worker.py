@@ -291,6 +291,7 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
     trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
     filters.append("setpts=PTS-STARTPTS")
+    filters.append("format=rgba")
     opacity_default = max(0.0, min(1.0, float(clip.get("opacity", 1) if clip.get("opacity") is not None else 1)))
     scale_default = max(0.5, min(2.0, float(clip.get("scale", 100) or 100) / 100.0))
     opacity_expr = keyframe_value_expression(clip, "opacity", opacity_default, fps, "T")
