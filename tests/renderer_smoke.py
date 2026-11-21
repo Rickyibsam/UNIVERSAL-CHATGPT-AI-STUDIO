@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+os.environ.setdefault('SUPABASE_URL', 'https://example.supabase.co')
+os.environ.setdefault('SUPABASE_PUBLISHABLE_KEY', 'test-publishable-key')
+from worker import worker
 
 
 def run(args: list[str]) -> None:
@@ -77,6 +84,18 @@ def main() -> None:
             "[0:v][v0]overlay=x=0:y=0:eof_action=pass:shortest=0:"
             "enable='between(t,0,1)'[vout]",
         )
+        scale_expr = worker.keyframe_value_expression(
+            {"keyframes": [{"frame": 0, "scale": 80}, {"frame": 30, "scale": 120}]},
+            "scale", 100.0, 30, "t",
+        )
+        assert scale_expr, "Renderer did not build the animated scale expression"
+        render_case(
+            folder, "720p-animated-scale-keyframes", 1280, 720, 30,
+            f"[1:v]setpts=PTS-STARTPTS,format=rgba,"
+            f"scale=w='iw*({scale_expr})':h='ih*({scale_expr})':eval=frame[v0];"
+            "[0:v][v0]overlay=x='(main_w-overlay_w)/2':y='(main_h-overlay_h)/2':"
+            "eof_action=pass:shortest=0[vout]",
+        )
         render_case(
             folder, "4k-zoom", 3840, 2160, 30,
             "[1:v]setpts=PTS-STARTPTS,fps=30,scale=3840:2160:force_original_aspect_ratio=decrease,"
@@ -86,7 +105,7 @@ def main() -> None:
             "[0:v][v0]overlay=x='(main_w-overlay_w)/2':y='(main_h-overlay_h)/2':"
             "eof_action=pass:shortest=0:enable='between(t,0,1)'[vout]",
         )
-    print("PASS: 720p opacity keyframes/wipe, 1080p chroma/slide and 4K zoom MP4 render smoke tests")
+    print("PASS: 720p opacity/scale keyframes/wipe, 1080p chroma/slide and 4K zoom MP4 render smoke tests")
 
 
 if __name__ == "__main__":
