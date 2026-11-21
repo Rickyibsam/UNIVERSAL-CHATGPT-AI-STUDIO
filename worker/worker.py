@@ -63,7 +63,8 @@ class PermanentJobError(Exception):
 
 
 async def request(client: httpx.AsyncClient, method: str, path: str, **kwargs: Any) -> httpx.Response:
-    response = await client.request(method, f"{SUPABASE_URL}{path}", headers=headers, **kwargs)
+    request_headers = kwargs.pop("headers", headers)
+    response = await client.request(method, f"{SUPABASE_URL}{path}", headers=request_headers, **kwargs)
     response.raise_for_status()
     return response
 
