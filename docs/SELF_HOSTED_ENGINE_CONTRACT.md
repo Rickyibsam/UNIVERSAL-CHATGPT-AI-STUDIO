@@ -69,7 +69,7 @@ A `render` job is handled inside the private worker with FFmpeg; it does not cal
 }
 ```
 
-The current renderer concatenates visual clips in supplied order, normalizes video size/FPS, mixes voice/music/SFX tracks, can burn subtitles, and stores MP4 plus optional SRT output in private Storage. It enforces a 15-minute render limit and 4K maximum dimensions. More advanced multi-track positioning, transitions and effects remain future renderer work.
+The current renderer composes timeline-positioned visual clips, normalizes video size/FPS, mixes voice/music/SFX tracks, applies clip filters, crop/fit, rotation, speed, scale, text overlays, fade/dissolve/slide/zoom/wipe transitions, green/blue chroma key and opacity keyframes, then stores MP4 output in private Storage. It enforces a 15-minute render limit and 4K maximum dimensions. A 30fps editor timeline is used. Actual production rendering still needs an authenticated project/media end-to-end test; the free Render instance may not have enough memory for long 4K jobs.
 
 ## Supported job families
 
@@ -83,7 +83,7 @@ The current renderer concatenates visual clips in supplied order, normalizes vid
 One engine endpoint provides a common model interface. Model adapters are selected internally by job input and an allowlisted model registry. Never accept arbitrary model download URLs or arbitrary shell commands from a user job.
 
 ## Worker container
-Build from the repository root with `docker build -f worker/Dockerfile -t studio-worker worker`. Run it as a private background process, not as a public browser endpoint. The current Render service is a static site and is not a GPU worker; do not attach this worker to it or claim generation is live until a separate worker and self-hosted inference engine are actually running.
+The Render HTTP API is in `worker/web.py`; it is deployed at `https://universal-studio-renderer.onrender.com` on the Render free web-service tier. It authenticates each request with the user's Supabase JWT and relies on project RLS; it does not use a service-role key. The editor queues a render job through `studio-gateway`, then asks this API to run that specific project-owned job. `worker.py` also contains the separate durable polling worker for AI jobs; that polling process is not deployed. The current web service runs FFmpeg rendering only and is not a GPU inference service.
 
 ## Self-hosted engine service
 The FastAPI service and allowlisted adapter registry are in `engine/`. Build its container with `docker build -f engine/Dockerfile -t universal-studio-engine engine`. Run it on the same private network as the worker and set `STUDIO_ENGINE_TOKEN` on both services. The engine exposes authenticated `GET /v1/capabilities` and `POST /v1/generate`. Server operators install adapter modules using `STUDIO_ADAPTER_MODULES`; request bodies cannot supply Python imports, model URLs or shell commands. No adapters are registered by default, so the engine correctly reports `MODEL_NOT_READY` until a model adapter is installed.
