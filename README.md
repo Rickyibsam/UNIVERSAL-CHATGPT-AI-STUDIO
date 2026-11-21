@@ -26,10 +26,11 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [x] Render web service deployed on Render free plan: `https://universal-studio-renderer.onrender.com`.
 - [x] Supabase Edge Function `studio-gateway` active with JWT verification; render jobs are project-scoped.
 - [x] Private media uploads, editor clip persistence, timeline restore and version snapshot integration.
-- [x] Debounced cloud autosave and explicit editor save; first cloud project save triggers media/timeline persistence.
+- [x] Debounced cloud autosave for project settings, scenes, characters and editor timeline; first cloud project save uploads existing editor media, and recovery versions are captured during save activity (at least every 10 minutes).
 - [x] FFmpeg MP4 renderer with video/image clips, audio mixing, text overlays, speed, fit/crop, rotation, static scale, filter presets, fades/dissolves, slide, zoom, wipe, green/blue chroma key and opacity keyframes.
 - [x] 30fps timeline timing increments.
 - [x] Automated FFmpeg smoke-test script for 720p keyframes/wipe, 1080p chroma/slide and 4K zoom; sample 1080p and 4K MP4 outputs were generated and ffprobe-verified in a Linux test environment.
+- [x] Rendered MP4/SRT artifacts stream to private Storage in chunks instead of being base64-buffered in memory.
 - [x] User-scoped Supabase JWT is used by the render web service; no service-role secret is shipped to the browser or renderer.
 
 ### Not yet complete / not verified
@@ -40,6 +41,7 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [ ] Permanent background queue worker for non-render jobs.
 - [ ] Owner-operated self-hosted inference engine and licensed model adapters for real AI screenplay, image, video, speech, music and SFX generation. The current engine registry has no adapters; `STUDIO_ENGINE_URL` is not configured.
 - [ ] Real consistency generation across characters and locations using model references.
+- [ ] Lightweight 3D asset/world editor and Minecraft world editor; these are not implemented yet.
 - [ ] Full browser regression/E2E and database workflow tests with authenticated project data.
 
 Lip-sync is intentionally out of scope. No third-party hosted AI APIs, paid GPU, or paid worker have been enabled. The Render renderer runs on the free web-service tier and may sleep while idle; long/high-resolution jobs are subject to its memory and execution limits.
