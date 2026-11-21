@@ -52,7 +52,7 @@ assert.ok(html.includes('localTime*editorFps()') && html.includes('sourceOffset=
 assert.ok(worker.includes('scale_expr = keyframe_value_expression') && worker.includes('frame_time(source_duration, fps, 1)'), 'renderer must apply animated scale and quantize clips to exact frames');
 assert.ok(worker.includes('def atempo_filters'), 'cloud renderer must support audio playback speed');
 assert.ok(worker.includes('drawtext=fontfile='), 'cloud renderer must burn clip title overlays');
-assert.ok(worker.includes('overlay=x=0:y=0'), 'cloud renderer must composite positioned video and overlay tracks');
+assert.ok(worker.includes('overlay=x=') && worker.includes('eof_action=pass:shortest=0'), 'cloud renderer must composite positioned video and overlay tracks');
 assert.ok(worker.includes('trim_in_seconds'), 'cloud renderer must respect clip trim in points');
 assert.ok(worker.includes('start_seconds'), 'cloud renderer must respect clip timeline positions');
 assert.ok(worker.includes('fade=t=in'), 'cloud renderer must support fade transitions');
