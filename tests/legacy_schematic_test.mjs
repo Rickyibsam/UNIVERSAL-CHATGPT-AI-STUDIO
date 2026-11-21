@@ -17,7 +17,7 @@ function fixture(){
   w.u8(8);w.string("Materials");w.string("Alpha");
   w.byteArray("Blocks",[1,35,17,1]);
   w.byteArray("Data",[0,14,4,0]);
-  w.byteArray("AddBlocks",[0x10,0]);
+  w.byteArray("AddBlocks",[0,0x01]);
   w.u8(0);return w.finish();
 }
 const raw=fixture();
