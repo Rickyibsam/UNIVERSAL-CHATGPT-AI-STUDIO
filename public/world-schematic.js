@@ -103,7 +103,7 @@ export async function encodeSchematic(objects){
   return await new Response(stream).blob();
 }
 export async function decodeSchematic(input){
-  let buffer=input instanceof ArrayBuffer?input:await input.arrayBuffer();
+  let buffer=input instanceof ArrayBuffer?input:ArrayBuffer.isView(input)?input.buffer.slice(input.byteOffset,input.byteOffset+input.byteLength):await input.arrayBuffer();
   const bytes=new Uint8Array(buffer);
   if(bytes[0]===0x1f&&bytes[1]===0x8b){
     if(typeof DecompressionStream==="undefined")throw new Error("This browser does not support GZIP decompression for .schem import.");
