@@ -15,6 +15,8 @@ assert.ok(rendererSmoke.includes('4k-zoom') && rendererSmoke.includes('1080p-sli
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
 const worldEditor = readFileSync(new URL('../public/world-3d.js', import.meta.url), 'utf8');
+const worldSchematic = readFileSync(new URL('../public/world-schematic.js', import.meta.url), 'utf8');
+execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldSchematic, stdio: ['pipe', 'ignore', 'pipe'] });
 execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldEditor, stdio: ['pipe', 'ignore', 'pipe'] });
 const worldMigration = readFileSync(new URL('../supabase/migrations/20261121174500_world_scenes.sql', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
@@ -66,6 +68,7 @@ assert.ok(html.includes('editorAddKeyframe'), 'editor must expose keyframe contr
 assert.ok(html.includes('worldCanvas') && html.includes('exportWorldGlb'), 'interactive 3D world canvas and GLB export controls exist');
 assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTransform'), 'voxel block placement and object transform controls exist');
 assert.ok(worldEditor.includes('OrbitControls') && worldEditor.includes('GLTFExporter') && worldEditor.includes('world_scenes'), '3D editor supports orbit controls, GLB export and cloud storage');
+assert.ok(html.includes('exportWorldSchem') && html.includes('importWorldSchem') && worldSchematic.includes('Version') && worldSchematic.includes('BlockData'), 'Minecraft Sponge schematic import/export controls and NBT support exist');
 assert.ok(worldMigration.includes('world_scenes_select_owner') && worldMigration.includes('auth.uid()'), 'world scene data is protected by project-owner RLS');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
