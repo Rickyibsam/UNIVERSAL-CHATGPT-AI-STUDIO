@@ -11,6 +11,10 @@ import base64
 import json
 import logging
 import os
+import subprocess
+import tempfile
+from pathlib import Path
+from urllib.parse import quote
 import socket
 import uuid
 from typing import Any
@@ -153,6 +157,169 @@ async def upload_artifact(
     return asset_id
 
 
+async def download_asset(client: httpx.AsyncClient, project_id: str, asset_id: str, folder: Path, index: int) -> tuple[Path, dict[str, Any]]:
+    rows = (await request(
+        client, "GET",
+        f"/rest/v1/assets?id=eq.{asset_id}&project_id=eq.{project_id}&select=*",
+    )).json()
+    if not rows:
+        raise PermanentJobError("RENDER_ASSET_NOT_FOUND")
+    asset = rows[0]
+    key = str(asset.get("storage_key") or "")
+    if not key or not key.startswith(project_id + "/"):
+        raise PermanentJobError("RENDER_ASSET_PATH_INVALID")
+    response = await client.get(
+        f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{quote(key, safe='/')}",
+        headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"},
+        timeout=HTTP_TIMEOUT,
+    )
+    response.raise_for_status()
+    suffix = Path(key).suffix or ".bin"
+    path = folder / f"input-{index}{suffix}"
+    path.write_bytes(response.content)
+    return path, asset
+
+
+def run_ffmpeg(args: list[str]) -> None:
+    completed = subprocess.run(args, capture_output=True, text=True, timeout=HTTP_TIMEOUT)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "FFmpeg failed")[-1800:]
+        raise RetryableJobError("FFMPEG_RENDER_FAILED: " + detail)
+
+
+async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str, Any]:
+    params = job.get("input_parameters") or {}
+    timeline = params.get("timeline") if isinstance(params.get("timeline"), dict) else params
+    clips = timeline.get("clips") if isinstance(timeline, dict) else None
+    if not isinstance(clips, list) or not clips or len(clips) > 100:
+        raise PermanentJobError("RENDER_TIMELINE_INVALID")
+
+    width = max(320, min(3840, int(timeline.get("width") or 1920)))
+    height = max(240, min(2160, int(timeline.get("height") or 1080)))
+    fps = max(12, min(60, int(timeline.get("fps") or 24)))
+    visual = [x for x in clips if x.get("track_type", "video") in ("video", "image")]
+    audio = [x for x in clips if x.get("track_type") in ("voice", "music", "sfx", "audio")]
+    if not visual:
+        raise PermanentJobError("RENDER_REQUIRES_VISUAL_CLIPS")
+
+    total_duration = sum(max(0.1, min(120, float(x.get("duration_seconds") or 5))) for x in visual)
+    if total_duration > 900:
+        raise PermanentJobError("RENDER_DURATION_LIMIT_EXCEEDED")
+
+    with tempfile.TemporaryDirectory(prefix="studio-render-") as temp:
+        folder = Path(temp)
+        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y"]
+        visual_inputs: list[tuple[dict[str, Any], Path, dict[str, Any]]] = []
+        audio_inputs: list[tuple[dict[str, Any], Path, dict[str, Any]]] = []
+        all_inputs = visual + audio
+        downloaded: dict[str, tuple[Path, dict[str, Any]]] = {}
+        for index, clip in enumerate(all_inputs):
+            asset_id = str(clip.get("asset_id") or "")
+            if not asset_id:
+                raise PermanentJobError("RENDER_CLIP_ASSET_ID_REQUIRED")
+            if asset_id not in downloaded:
+                downloaded[asset_id] = await download_asset(
+                    client, str(job["project_id"]), asset_id, folder, index
+                )
+            path, asset = downloaded[asset_id]
+            if clip in visual:
+                visual_inputs.append((clip, path, asset))
+            else:
+                audio_inputs.append((clip, path, asset))
+
+        for clip, path, asset in visual_inputs:
+            duration = max(0.1, min(120, float(clip.get("duration_seconds") or asset.get("duration_seconds") or 5)))
+            if (asset.get("mime_type") or "").startswith("image/"):
+                command += ["-loop", "1", "-t", str(duration), "-i", str(path)]
+            else:
+                command += ["-i", str(path)]
+
+        for clip, path, asset in audio_inputs:
+            command += ["-i", str(path)]
+
+        filters: list[str] = []
+        video_labels: list[str] = []
+        for index, (clip, _path, asset) in enumerate(visual_inputs):
+            duration = max(0.1, min(120, float(clip.get("duration_seconds") or asset.get("duration_seconds") or 5)))
+            label = f"v{index}"
+            filters.append(
+                f"[{index}:v]trim=duration={duration},setpts=PTS-STARTPTS,"
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
+                f"fps={fps},setsar=1,format=yuv420p[{label}]"
+            )
+            video_labels.append(f"[{label}]")
+        filters.append("".join(video_labels) + f"concat=n={len(video_labels)}:v=1:a=0[vout]")
+
+        audio_labels: list[str] = []
+        input_offset = len(visual_inputs)
+        for index, (clip, _path, _asset) in enumerate(audio_inputs):
+            input_id = input_offset + index
+            delay = max(0, min(900000, int(float(clip.get("start_seconds") or 0) * 1000)))
+            volume = max(0.0, min(4.0, float(clip.get("volume", 1.0))))
+            label = f"a{index}"
+            filters.append(
+                f"[{input_id}:a]asetpts=PTS-STARTPTS,adelay={delay}|{delay},"
+                f"volume={volume},aresample=48000[{label}]"
+            )
+            audio_labels.append(f"[{label}]")
+        if audio_labels:
+            filters.append("".join(audio_labels) + f"amix=inputs={len(audio_labels)}:duration=longest:dropout_transition=2,alimiter=limit=0.95[aout]")
+        else:
+            filters.append(f"anullsrc=r=48000:cl=stereo,atrim=duration={total_duration}[aout]")
+
+        subtitle_text = str(timeline.get("subtitle_srt") or "")
+        subtitle_path = None
+        if subtitle_text:
+            if len(subtitle_text) > 2_000_000:
+                raise PermanentJobError("SUBTITLE_FILE_TOO_LARGE")
+            subtitle_path = folder / "captions.srt"
+            subtitle_path.write_text(subtitle_text, encoding="utf-8")
+            if timeline.get("burn_subtitles", True):
+                filters.append(f"[vout]subtitles='{subtitle_path.as_posix()}'[vsub]")
+                video_map = "[vsub]"
+            else:
+                video_map = "[vout]"
+        else:
+            video_map = "[vout]"
+
+        output = folder / "final.mp4"
+        command += [
+            "-filter_complex", ";".join(filters),
+            "-map", video_map, "-map", "[aout]",
+            "-t", str(total_duration),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart", str(output),
+        ]
+        await asyncio.to_thread(run_ffmpeg, command)
+        if not output.exists() or output.stat().st_size < 1024:
+            raise RetryableJobError("FFMPEG_OUTPUT_MISSING")
+        artifacts = [{
+            "filename": "final.mp4",
+            "mime_type": "video/mp4",
+            "asset_type": "video",
+            "content_base64": base64.b64encode(output.read_bytes()).decode("ascii"),
+            "width": width,
+            "height": height,
+            "duration_seconds": total_duration,
+            "license_metadata": {"renderer": "ffmpeg", "source": "owner_cloud_worker"},
+        }]
+        if subtitle_path and subtitle_path.exists() and not timeline.get("burn_subtitles", True):
+            artifacts.append({
+                "filename": "captions.srt",
+                "mime_type": "application/x-subrip",
+                "asset_type": "subtitle",
+                "content_base64": base64.b64encode(subtitle_path.read_bytes()).decode("ascii"),
+                "license_metadata": {"source": "user_project"},
+            })
+        return {
+            "artifacts": artifacts,
+            "result_payload": {"duration_seconds": total_duration, "width": width, "height": height, "format": "mp4"},
+            "metadata": {"engine": "self-hosted-ffmpeg", "renderer": "libx264+aac"},
+        }
+
+
 async def run_engine(client: httpx.AsyncClient, job: dict[str, Any]) -> dict[str, Any]:
     if not ENGINE_URL:
         raise RetryableJobError("SELF_HOSTED_ENGINE_NOT_CONFIGURED")
@@ -194,7 +361,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     job_id = job["id"]
     try:
         await patch_job(client, job_id, {"progress_percent": 5, "heartbeat_at": utc_now()})
-        result = await run_engine(client, job)
+        result = await render_timeline(client, job) if job.get("job_type") == "render" else await run_engine(client, job)
         ids: list[str] = []
         artifacts = result.get("artifacts") or []
         for index, artifact in enumerate(artifacts):
