@@ -21,6 +21,11 @@ The Studio is browser-operated. Do not install Ollama, ComfyUI, FFmpeg, GPU mode
 
 The function targets `gemini-2.5-flash-lite`. Google's current pricing page lists free-tier input/output for this model subject to quotas and terms. The free tier can use submitted content to improve Google products; do not send confidential material unless those terms are acceptable. If a provider account changes to paid billing, the project must not silently upgrade or spend: keep paid billing disabled and review usage/quotas in Google AI Studio.
 
+## Database queue and continuity foundation
+The database now includes bounded retry metadata, scheduled availability, worker locks/heartbeats, provider metadata and estimated-cost fields on `generation_jobs`. The `claim_studio_jobs` RPC uses row locks with `SKIP LOCKED` and is executable only by `service_role`; browser roles are explicitly denied. A project-owned `locations` table and scene-level `location_id` / `continuity_prompt` fields provide the first persistence layer for recurring environments. Timeline clip policies also validate that referenced tracks, scenes and assets belong to the same project.
+
+This is queue infrastructure, not a running worker: no worker service currently polls jobs or performs automatic retries. Do not mark background processing complete until a hosted worker is deployed and tested.
+
 ## What is not connected yet
 - Cloud image generation and reference-conditioned image jobs.
 - Cloud video generation adapters (Veo, Kling, Runway, MiniMax and alternatives).
