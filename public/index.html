@@ -298,22 +298,34 @@ $('realAiStoryBtn').addEventListener('click',async()=>{
  const prompt=$('prompt').value.trim();if(!prompt){$('storyOutput').textContent='Enter your video idea first.';return;}
  const {data:{session}}=await sb.auth.getSession();if(!session){$('storyOutput').textContent='Sign in first to use Cloud AI.';return;}
  if(!currentPlan?.project_id){$('storyOutput').textContent='Save this production to your cloud projects first, then generate the screenplay.';return;}
- $('storyOutput').textContent='Generating screenplay on the secure cloud AI service…';
+ $('storyOutput').textContent='Submitting screenplay to your private cloud generation queue…';
  try{
  const res=await fetch(SUPABASE_URL+'/functions/v1/studio-gateway',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'generate-script',project_id:currentPlan.project_id,prompt,settings:{genre:$('storyGenre').value,audience:$('storyAudience').value,tone:$('storyTone').value,ending:$('storyEnding').value,setting:$('storySetting').value,language:$('language').value,style:$('style').value,duration:$('duration').value,notes:$('storyNotes').value}})});
- const payload=await res.json();if(!res.ok)throw new Error(payload.message||payload.error||payload.status||'Cloud generation failed');
- const d=payload.result;if(!d||!Array.isArray(d.scenes))throw new Error('Invalid screenplay response');
+ const queued=await res.json();if(!res.ok)throw new Error(queued.message||queued.error||queued.status||'Could not queue screenplay');
+ let job=null;
+ for(let attempt=0;attempt<240;attempt++){
+  await new Promise(resolve=>setTimeout(resolve,2000));
+  const {data,error}=await sb.from('generation_jobs').select('status,progress_percent,result_payload,error_message').eq('id',queued.job_id).eq('project_id',currentPlan.project_id).single();
+  if(error)throw new Error('Could not read job progress: '+error.message);
+  job=data;
+  if(job.status==='succeeded')break;
+  if(job.status==='failed'||job.status==='cancelled')throw new Error(job.error_message||'Screenplay job '+job.status);
+  $('storyOutput').textContent='Private cloud queue · '+job.status+' · '+Number(job.progress_percent||0)+'% · Job '+queued.job_id;
+ }
+ if(!job||job.status!=='succeeded')throw new Error('Generation is still queued or running. Check Job History later; it was not marked complete.');
+ const d=job.result_payload;if(!d||!Array.isArray(d.scenes)||d.scenes.length<3)throw new Error('Self-hosted engine returned an invalid screenplay result');
  const seconds=({'30 seconds':30,'60 seconds':60,'3 minutes':180,'5 minutes':300,'10 minutes':600,'20 minutes':1200})[$('duration').value]||60;
  const characters=(d.characters||[]).map(x=>({name:x.name||'Character',description:x.description||'',voice_profile:{style:x.voice||''},continuity_notes:x.continuity||''}));
  characterDrafts.splice(0,characterDrafts.length,...characters);renderCharacters();
  currentPlan={...currentPlan,title:d.title||prompt.slice(0,70),prompt,format:$('format').value,style:$('style').value,duration:$('duration').value,duration_seconds:seconds,language:$('language').value,genre:$('storyGenre').value,audience:$('storyAudience').value,tone:$('storyTone').value,ending:$('storyEnding').value,setting:$('storySetting').value,notes:$('storyNotes').value,characters,scenes:d.scenes.map(s=>({title:s.title||'Scene',description:'VISUAL: '+s.visual_prompt+' CAMERA: '+s.camera+' DIALOGUE: '+s.dialogue+' NARRATION: '+s.narration+' MUSIC: '+s.music+' SFX: '+s.sfx+' SUBTITLES: '+$('language').value,duration_seconds:Number(s.duration_seconds)||Math.max(1,Math.round(seconds/d.scenes.length)),camera_direction:s.camera||'Cinematic'}))};
- $('summary').textContent='Cloud AI screenplay · '+currentPlan.scenes.length+' scenes · '+currentPlan.title;
- $('meta').innerHTML=[currentPlan.format,currentPlan.style,currentPlan.language,'Gemini Flash-Lite · Cloud'].map(x=>'<span class="pill">'+escapeHtml(x)+'</span>').join('');
+ $('summary').textContent='Self-hosted cloud screenplay · '+currentPlan.scenes.length+' scenes · '+currentPlan.title;
+ $('meta').innerHTML=[currentPlan.format,currentPlan.style,currentPlan.language,'Self-hosted cloud engine'].map(x=>'<span class="pill">'+escapeHtml(x)+'</span>').join('');
  $('scenes').innerHTML=currentPlan.scenes.map((s,i)=>'<article class="scene"><div class="sceneNo">0'+(i+1)+'</div><div><h3>'+escapeHtml(s.title)+'</h3><textarea class="scene-edit" data-scene-index="'+i+'">'+escapeHtml(s.description)+'</textarea><p class="hint">Duration: '+s.duration_seconds+' sec</p></div></article>').join('');
  $('scenes').oninput=e=>{if(e.target.matches('.scene-edit'))currentPlan.scenes[Number(e.target.dataset.sceneIndex)].description=e.target.value;};
- $('result').style.display='block';$('storyOutput').textContent='Cloud screenplay generated. Job '+payload.job_id+'. Review and Save to Cloud.';$('result').scrollIntoView({behavior:'smooth'});
- }catch(e){$('storyOutput').textContent='Cloud AI error: '+e.message+'. Configure GEMINI_API_KEY in Supabase Edge Function Secrets; no paid provider is called.';}
+ $('result').style.display='block';$('storyOutput').textContent='Screenplay generated by the private cloud engine. Review and Save to Cloud.';$('result').scrollIntoView({behavior:'smooth'});
+ }catch(e){$('storyOutput').textContent='Cloud generation status: '+e.message+'. The self-hosted cloud worker and AI engine must be online; no external free-tier AI API is used.';}
 });
+
 function refreshBrowserVoices(){
  const select=$('browserVoice');if(!select||!('speechSynthesis' in window))return;
  const chosen=select.value;const voices=window.speechSynthesis.getVoices();
