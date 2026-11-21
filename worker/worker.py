@@ -116,7 +116,62 @@ async def load_project_context(client: httpx.AsyncClient, job: dict[str, Any]) -
     return context
 
 
-async def upload_artifact(
+async async def upload_file_artifact(
+    client: httpx.AsyncClient,
+    job: dict[str, Any],
+    path: Path,
+    filename: str,
+    mime: str,
+    asset_type: str,
+    metadata: dict[str, Any] | None = None,
+) -> str:
+    size = path.stat().st_size
+    if size <= 0 or size > 2 * 1024 * 1024 * 1024:
+        raise PermanentJobError("ARTIFACT_SIZE_INVALID")
+    asset_id = str(uuid.uuid4())
+    name = os.path.basename(filename)
+    key = f"{job['project_id']}/{job['id']}/{asset_id}-{name}"
+
+    async def file_chunks():
+        with path.open("rb") as handle:
+            while True:
+                chunk = await asyncio.to_thread(handle.read, 1024 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+
+    upload_headers = {
+        **headers,
+        "Content-Type": mime,
+        "Content-Length": str(size),
+        "x-upsert": "false",
+    }
+    response = await client.put(
+        f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{key}",
+        content=file_chunks(),
+        headers=upload_headers,
+        timeout=HTTP_TIMEOUT,
+    )
+    response.raise_for_status()
+    row = {
+        "id": asset_id,
+        "project_id": job["project_id"],
+        "scene_id": job.get("scene_id"),
+        "asset_type": asset_type,
+        "storage_key": key,
+        "mime_type": mime,
+        "size_bytes": size,
+        "duration_seconds": (metadata or {}).get("duration_seconds"),
+        "width": (metadata or {}).get("width"),
+        "height": (metadata or {}).get("height"),
+        "source_provider": "self_hosted",
+        "license_metadata": (metadata or {}).get("license_metadata", {"renderer": "ffmpeg"}),
+    }
+    await request(client, "POST", "/rest/v1/assets", json=row, headers={**headers, "Prefer": "return=minimal"})
+    return asset_id
+
+
+def upload_artifact(
     client: httpx.AsyncClient, job: dict[str, Any], artifact: dict[str, Any]
 ) -> str:
     try:
@@ -475,20 +530,21 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         await asyncio.to_thread(run_ffmpeg, command)
         if not output.exists() or output.stat().st_size < 1024:
             raise RetryableJobError("FFMPEG_OUTPUT_MISSING")
-        artifacts = [{
-            "filename": "final.mp4", "mime_type": "video/mp4", "asset_type": "video",
-            "content_base64": base64.b64encode(output.read_bytes()).decode("ascii"),
-            "width": width, "height": height, "duration_seconds": total_duration,
-            "license_metadata": {"renderer": "ffmpeg", "source": "owner_cloud_worker"},
-        }]
+        output_asset_id = await upload_file_artifact(
+            client, job, output, "final.mp4", "video/mp4", "video",
+            {"width": width, "height": height, "duration_seconds": total_duration,
+             "license_metadata": {"renderer": "ffmpeg", "source": "owner_cloud_worker"}},
+        )
+        output_ids = [output_asset_id]
         if subtitle_path and subtitle_path.exists() and not timeline.get("burn_subtitles", True):
-            artifacts.append({
-                "filename": "captions.srt", "mime_type": "application/x-subrip", "asset_type": "subtitle",
-                "content_base64": base64.b64encode(subtitle_path.read_bytes()).decode("ascii"),
-                "license_metadata": {"source": "user_project"},
-            })
+            subtitle_id = await upload_file_artifact(
+                client, job, subtitle_path, "captions.srt", "application/x-subrip", "subtitle",
+                {"license_metadata": {"source": "user_project"}},
+            )
+            output_ids.append(subtitle_id)
         return {
-            "artifacts": artifacts,
+            "artifacts": [],
+            "uploaded_asset_ids": output_ids,
             "result_payload": {"duration_seconds": total_duration, "width": width, "height": height, "format": "mp4"},
             "metadata": {"engine": "self-hosted-ffmpeg", "renderer": "libx264+aac", "timeline_mode": "positioned-multitrack"},
         }
@@ -536,7 +592,7 @@ async def process_job(client: httpx.AsyncClient, job: dict[str, Any]) -> None:
     try:
         await patch_job(client, job_id, {"status": "running", "progress_percent": 5, "heartbeat_at": utc_now()})
         result = await render_timeline(client, job) if job.get("job_type") == "render" else await run_engine(client, job)
-        ids: list[str] = []
+        ids: list[str] = list(result.get("uploaded_asset_ids") or [])
         artifacts = result.get("artifacts") or []
         for index, artifact in enumerate(artifacts):
             ids.append(await upload_artifact(client, job, artifact))
