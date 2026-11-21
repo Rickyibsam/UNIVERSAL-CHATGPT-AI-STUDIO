@@ -529,6 +529,10 @@ async function generateVideoFromPrompt(){
   let job=null;
   for(let attempt=0;attempt<180;attempt++){
    await new Promise(resolve=>setTimeout(resolve,2000));
+   if(attempt%15===0){
+    const heartbeat=await fetch('https://universal-studio-renderer.onrender.com/jobs/'+encodeURIComponent(queued.job_id)+'?project_id='+encodeURIComponent(currentPlan.project_id),{headers:{'Authorization':'Bearer '+session.access_token}});
+    if(!heartbeat.ok&&heartbeat.status!==404)throw new Error('Cloud worker connection lost while generation was running.');
+   }
    const {data,error}=await sb.from('generation_jobs').select('status,progress_percent,result_payload,error_message,output_asset_ids').eq('id',queued.job_id).eq('project_id',currentPlan.project_id).single();
    if(error)throw new Error('Could not read generation progress: '+error.message);
    job=data;
