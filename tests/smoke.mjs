@@ -30,6 +30,9 @@ assert.ok(html.includes("from('generation_jobs')"), 'screenplay UI must poll dur
 assert.ok(!/generativelanguage\.googleapis\.com|GEMINI_API_KEY|api\.openai\.com|replicate\.com|fal\.ai/i.test(html), 'browser must not call hosted AI generation APIs');
 assert.ok(worker.includes('claim_studio_jobs'), 'private worker must claim durable jobs');
 assert.ok(worker.includes('STUDIO_ENGINE_URL'), 'private worker must call only the self-hosted engine');
+assert.ok(worker.includes('async def render_timeline'), 'private worker must implement cloud MP4 assembly');
+assert.ok(worker.includes('subtitles='), 'cloud renderer must support subtitle burn-in');
+assert.ok(worker.includes('amix=inputs='), 'cloud renderer must mix audio tracks');
 assert.ok(worker.includes('"status": "succeeded"'), 'worker must use the database success status');
 assert.ok(!/generativelanguage\.googleapis\.com|api\.openai\.com|replicate\.com|fal\.ai/i.test(worker), 'worker must not call third-party hosted generation APIs');
 assert.ok(!html.includes('127.0.0.1'), 'browser app must not depend on localhost AI services');
