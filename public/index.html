@@ -643,12 +643,6 @@ $('generateAudioBtn').addEventListener('click',async()=>{
  grid.addEventListener('click',e=>{const b=e.target.closest('[data-template-id]');if(!b)return;const t=all.find(x=>x.id===Number(b.dataset.templateId));if(!t)return;const $=id=>document.getElementById(id);$('format').value=t.ratio;$('duration').value=t.duration;$('style').value=t.style;$('prompt').value=t.prompt;$('templateStatus').textContent=t.name+' selected · prompt, visual style, duration and '+t.ratio+' canvas applied.';$('production').scrollIntoView({behavior:'smooth'});});
  render();
 })();
-document.querySelectorAll('.use-template').forEach(button=>button.addEventListener('click',()=>{
- const ratio=button.dataset.ratio,name=button.dataset.name;
- $('format').value=ratio;$('duration').value=ratio==='9:16'?'60 seconds':'3 minutes';
- $('templateStatus').textContent=name+' selected · '+ratio+' canvas applied. Add your prompt and save the project draft.';
- $('production').scrollIntoView({behavior:'smooth'});
-}));
 const worldObjects=[];
 let selectedWorldObjectId=null;
 function renderWorldObjects(){
