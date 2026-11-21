@@ -864,7 +864,8 @@ window.__studioEditor={state,manifest,render,select,setFrameRate(value){const fp
  $('kidsStopVoice').addEventListener('click',()=>{speechSynthesis.cancel();$('kidsStatus').textContent='Voice preview stopped.';});
  $('kidsSendEditor').addEventListener('click',()=>{if(!scenes.length)build();const ed=window.__studioEditor;if(!ed){$('kidsStatus').textContent='Professional Editor is not ready yet. Open it once and try again.';return;}const start=ed.state.clips.reduce((m,c)=>Math.max(m,Number(c.start||0)+Math.max(0,Number(c.trimOut||0)-Number(c.trimIn||0))),0);const clips=scenes.map((x,i)=>({id:'kids-'+Date.now()+'-'+i,name:x.title+' — '+x.sub,kind:'image',url:x.url,start:start+i*x.duration,trimIn:0,trimOut:x.duration,frameRate:30,track:'video',fit:'contain',volume:0}));ed.state.clips.push(...clips);ed.render();if(clips[0])ed.select(clips[0].id);location.hash='#proEditor';$('kidsStatus').textContent=scenes.length+' image scenes added to the Professional Editor timeline. Voice is available as browser preview; it is not yet embedded in the MP4.';});
 })();
-\n/* Canva-like panel navigation: keep the workspace in one viewport */
+
+/* Canva-like panel navigation: keep the workspace in one viewport */
 (()=>{
  const main=document.querySelector('.layout>main');
  const nav=[...document.querySelectorAll('.side .navitem')];
