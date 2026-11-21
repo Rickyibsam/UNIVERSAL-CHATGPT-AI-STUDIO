@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildLitematicNbt, decodeLitematicRoot } from "../public/litematic-schematic.js";
+import { buildLitematicNbt, decodeLitematic, decodeLitematicRoot, encodeLitematic } from "../public/litematic-schematic.js";
 import { parseNbt } from "../public/world-schematic.js";
 
 function packCompact(values, bits) {
@@ -67,4 +67,8 @@ assert.throws(() => buildLitematicNbt([
   { type: "Minecraft custom block", blockState: "minecraft:stone", x: 0, y: 0, z: 0 },
   { type: "Minecraft custom block", blockState: "minecraft:stone", x: 128, y: 0, z: 0 }
 ]), /128/);
+const compressedFile = await encodeLitematic(exportObjects);
+const compressedRoundTrip = await decodeLitematic(compressedFile);
+assert.equal(compressedRoundTrip.blocks.length, 3, "GZIP .litematic export can be decoded again");
+assert.ok(compressedRoundTrip.blocks.some(b => b.state === "minecraft:oak_planks[axis=y]"), "GZIP round-trip preserves block properties");
 console.log("Litematic import/export round-trip tests passed.");
