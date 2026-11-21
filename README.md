@@ -30,6 +30,7 @@ A browser-based, cloud-first AI filmmaking studio. The user's laptop is a browse
 - [x] Corrected timeline clip RLS checks so tracks, scenes and assets must belong to the same project.
 - [x] Screenplay gateway changed to enqueue a private self-hosted job; no external AI provider is called.
 - [x] Worker source added for job polling, bounded retry, project/scene/character/location context, private media upload and structured screenplay results.
+- [x] Self-hosted inference engine service skeleton added with a single `/v1/generate` contract, allowlisted adapter registry and authenticated capabilities endpoint. No model adapter is installed yet.
 - [ ] Deploy the private worker and owner-operated inference engine; the current Render service is only a static frontend.
 - [ ] Verify an authenticated screenplay job end-to-end after the private engine is online.
 - [ ] Self-hosted image model adapter and private asset ingestion.
