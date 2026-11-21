@@ -41,6 +41,9 @@ assert.ok(!html.includes('service_role'), 'service role key must never be shippe
 assert.ok(!html.includes('sb_secret_'), 'Supabase secret key must never be shipped to the browser');
 assert.ok(!html.includes('value="lipsync"'), 'lip-sync generation must remain disabled in the low-spec build');
 assert.ok(html.includes('OfflineAudioContext'), 'browser audio preview tools must exist');
+assert.ok(html.includes('id="promptTemplate"') && html.includes('id="applyPromptTemplate"'), 'ready-made prompt template controls exist');
+for (const template of ['cinematic-short','3d-animation','minecraft','product-ad','documentary','horror','motivational','kids']) assert.ok(html.includes("'"+template+"':"), 'prompt template exists: '+template);
+assert.ok(html.includes("box.dispatchEvent(new Event('input'"), 'applying a template triggers the prompt input listener');
 assert.ok(html.includes('/functions/v1/studio-gateway'), 'screenplay generation must call the cloud gateway');
 assert.ok(html.includes("from('generation_jobs')"), 'screenplay UI must poll durable job progress');
 assert.ok(!/generativelanguage\.googleapis\.com|GEMINI_API_KEY|api\.openai\.com|replicate\.com|fal\.ai/i.test(html), 'browser must not call hosted AI generation APIs');
