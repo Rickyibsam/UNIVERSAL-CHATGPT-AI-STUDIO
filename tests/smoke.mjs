@@ -12,7 +12,7 @@ const requiredIds = [
   'prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
   'mediaFiles','uploadMediaBtn','timelineItems','createTimelineBtn',
   'saveTimelineBtn','exportTimelineBtn','exportSubsBtn','saveVersionBtn',
-  'loadVersionsBtn','comfyWorkflow','runComfyJobBtn','checkComfyQueueBtn','downloadRenderKitBtn','referenceAsset','providerStatus',
+  'loadVersionsBtn','downloadRenderKitBtn','providerStatus',
   'authEmail','authPassword','signInBtn','signUpBtn','saveBtn','audioStudio','previewNarrationBtn','generateAudioBtn'
 ];
 for (const id of requiredIds) {
@@ -23,5 +23,9 @@ assert.equal(ids.length, new Set(ids).size, 'HTML element IDs must be unique');
 assert.ok(!html.includes('service_role'), 'service role key must never be shipped to the browser');
 assert.ok(!html.includes('sb_secret_'), 'Supabase secret key must never be shipped to the browser');
 assert.ok(!html.includes('value="lipsync"'), 'lip-sync generation must remain disabled in the low-spec build');
-assert.ok(html.includes('OfflineAudioContext'), 'procedural WAV audio generator must exist');
+assert.ok(html.includes('OfflineAudioContext'), 'browser audio preview tools must exist');
+assert.ok(html.includes('/functions/v1/studio-gateway'), 'screenplay generation must call the cloud gateway');
+assert.ok(!html.includes('127.0.0.1'), 'browser app must not depend on localhost AI services');
+assert.ok(!html.toLowerCase().includes('ollama'), 'local Ollama dependency must be removed');
+assert.ok(!html.toLowerCase().includes('comfyui'), 'local ComfyUI dependency must be removed');
 console.log(`PASS: ${scripts.length} inline script(s), ${requiredIds.length} required controls, unique IDs, no privileged Supabase key.`);
