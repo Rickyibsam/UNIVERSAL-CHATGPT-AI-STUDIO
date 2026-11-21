@@ -15,10 +15,12 @@ function packCompact(values, bits) {
 const palette = [
   { Name: "minecraft:air" },
   { Name: "minecraft:stone" },
-  { Name: "minecraft:oak_planks", Properties: { axis: "y" } }
+  { Name: "minecraft:oak_planks", Properties: { axis: "y" } },
+  { Name: "minecraft:dirt" },
+  { Name: "minecraft:glass" }
 ];
 const count = 48;
-const indexes = Array.from({ length: count }, (_, i) => i % 3);
+const indexes = Array.from({ length: count }, (_, i) => i % 5);
 const root = {
   Regions: {
     "main": {
@@ -43,6 +45,7 @@ assert.equal(result.length, 4);
 assert.ok(result.blocks.some(b => b.state === "minecraft:stone"), "palette states are decoded");
 assert.ok(result.blocks.some(b => b.state === "minecraft:oak_planks[axis=y]"), "block properties are preserved");
 assert.ok(result.blocks.some(b => b.state === "minecraft:glass"), "second region is included");
+assert.ok(result.blocks.some(b => b.state === "minecraft:dirt"), "compact packed values crossing a 64-bit boundary are decoded");
 assert.ok(result.blocks.every(b => b.x >= 0 && b.y >= 0 && b.z >= 0), "negative source coordinates are normalized");
 assert.throws(() => decodeLitematicRoot({ Regions: { bad: { Size: { x: 129, y: 1, z: 1 }, BlockStatePalette: palette, BlockStates: [0n] } } }), /dimension/);
 assert.throws(() => decodeLitematicRoot({ Regions: {} }), /between 1 and 128/);
