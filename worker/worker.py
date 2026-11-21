@@ -294,10 +294,8 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     opacity_default = max(0.0, min(1.0, float(clip.get("opacity", 1) if clip.get("opacity") is not None else 1)))
     scale_default = max(0.5, min(2.0, float(clip.get("scale", 100) or 100) / 100.0))
     opacity_expr = keyframe_value_expression(clip, "opacity", opacity_default, fps, "T")
-    scale_expr = keyframe_value_expression(clip, "scale", scale_default * 100, fps, "t")
-    if scale_expr or abs(scale_default - 1.0) > 0.0001:
-        scale_value = scale_expr or f"{scale_default:.6f}"
-        filters.append(f"scale=w='iw*({scale_value})':h='ih*({scale_value})':eval=frame")
+    if abs(scale_default - 1.0) > 0.0001:
+        filters.append(f"scale=iw*{scale_default:.6f}:ih*{scale_default:.6f}")
     if opacity_expr or abs(opacity_default - 1.0) > 0.0001:
         opacity_value = opacity_expr or f"{opacity_default:.6f}"
         filters.append(f"geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='alpha(X,Y)*({opacity_value})'")
@@ -419,7 +417,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             elif transition == "slide right":
                 overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,-main_w*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
                 overlay_y = "0"
-            elif transition == "zoom" or any(isinstance(k, dict) and "scale" in k for k in (clip.get("keyframes") or [])):
+            elif transition == "zoom":
                 overlay_x = "(main_w-overlay_w)/2"
                 overlay_y = "(main_h-overlay_h)/2"
             else:
