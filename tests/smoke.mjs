@@ -16,7 +16,10 @@ const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), '
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
 const worldEditor = readFileSync(new URL('../public/world-3d.js', import.meta.url), 'utf8');
 const worldSchematic = readFileSync(new URL('../public/world-schematic.js', import.meta.url), 'utf8');
+const legacySchematic = readFileSync(new URL('../public/legacy-schematic.js', import.meta.url), 'utf8');
 execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldSchematic, stdio: ['pipe', 'ignore', 'pipe'] });
+execFileSync(process.execPath, ['--input-type=module', '--check'], { input: legacySchematic, stdio: ['pipe', 'ignore', 'pipe'] });
+execFileSync(process.execPath, ['tests/legacy_schematic_test.mjs']);
 execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldEditor, stdio: ['pipe', 'ignore', 'pipe'] });
 const worldMigration = readFileSync(new URL('../supabase/migrations/20261121174500_world_scenes.sql', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
@@ -73,6 +76,7 @@ assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTra
 assert.ok(html.includes('isBlock?(n%16)-8') && html.includes('Math.round(Number(patch.x)||0)'), 'Minecraft blocks must use integer one-unit voxel coordinates');
 assert.ok(worldEditor.includes('OrbitControls') && worldEditor.includes('GLTFExporter') && worldEditor.includes('world_scenes'), '3D editor supports orbit controls, GLB export and cloud storage');
 assert.ok(html.includes('exportWorldSchem') && html.includes('importWorldSchem') && worldSchematic.includes('BlockData'), 'Minecraft Sponge schematic import/export controls and NBT support exist');
+assert.ok(html.includes('accept=".schem,.schematic,application/octet-stream"') && worldSchematic.includes('decodeLegacySchematic'), 'legacy MCEdit .schematic import is exposed');
 assert.ok(worldMigration.includes('world_scenes_select_owner') && worldMigration.includes('auth.uid()'), 'world scene data is protected by project-owner RLS');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
