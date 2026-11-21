@@ -48,6 +48,18 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def frame_time(value: Any, fps: int, minimum_frames: int = 0) -> float:
+    """Snap a non-negative timeline time to the nearest whole output frame."""
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        seconds = 0.0
+    if not math.isfinite(seconds):
+        seconds = 0.0
+    frames = int(math.floor(max(0.0, seconds) * max(1, fps) + 0.5))
+    return max(minimum_frames, frames) / max(1, fps)
+
+
 headers = {
     "apikey": os.getenv("SUPABASE_PUBLISHABLE_KEY", SERVICE_KEY),
     "Authorization": f"Bearer {SERVICE_KEY}" if SERVICE_KEY else "",
@@ -414,17 +426,17 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
     for clip in visual:
         source_duration = max(0.1, min(120, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 5)))
         speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
-        source_duration = max(1.0 / fps, round(source_duration * fps) / fps)
-        display_duration = max(1.0 / fps, round((source_duration / speed) * fps) / fps)
-        start_seconds = max(0.0, min(900.0, round(float(clip.get("start_seconds", clip.get("start", cursor)) or 0) * fps) / fps))
+        source_duration = frame_time(source_duration, fps, 1)
+        display_duration = frame_time(source_duration / speed, fps, 1)
+        start_seconds = min(900.0, frame_time(clip.get("start_seconds", clip.get("start", cursor)), fps))
         visual_layout.append((clip, start_seconds, source_duration, display_duration))
         cursor = max(cursor, start_seconds + display_duration)
     for clip in audio:
         audio_source_duration = max(0.1, min(900.0, float(clip.get("duration_seconds") or (float(clip.get("trimOut", 0)) - float(clip.get("trimIn", 0))) or 30)))
         audio_speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
-        audio_source_duration = max(1.0 / fps, round(audio_source_duration * fps) / fps)
-        audio_start = max(0.0, min(900.0, round(float(clip.get("start_seconds", clip.get("start", 0)) or 0) * fps) / fps))
-        cursor = max(cursor, audio_start + max(1.0 / fps, round((audio_source_duration / audio_speed) * fps) / fps))
+        audio_source_duration = frame_time(audio_source_duration, fps, 1)
+        audio_start = min(900.0, frame_time(clip.get("start_seconds", clip.get("start", 0)), fps))
+        cursor = max(cursor, audio_start + frame_time(audio_source_duration / audio_speed, fps, 1))
     total_duration = cursor
     if total_duration <= 0 or total_duration > 900:
         raise PermanentJobError("RENDER_DURATION_LIMIT_EXCEEDED")
@@ -465,7 +477,7 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
         current_base = "base0"
         for index, (clip, _path, asset, start_seconds, source_duration, display_duration) in enumerate(visual_inputs):
             input_index = index + 1
-            trim_in = max(0.0, min(3600.0, round(float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0) * fps) / fps))
+            trim_in = min(3600.0, frame_time(clip.get("trim_in_seconds", clip.get("trimIn", 0)), fps))
             label = f"v{index}"
             chain = render_filter_chain(clip, width, height, fps, start_seconds, display_duration)
             filters.append(f"[{input_index}:v]trim=start={trim_in:.5f}:duration={source_duration:.5f},{chain}[{label}]")
