@@ -245,15 +245,15 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     speed = max(0.25, min(4.0, float(clip.get("speed") or 1)))
     trim_in = max(0.0, min(3600.0, float(clip.get("trim_in_seconds", clip.get("trimIn", 0)) or 0)))
     filters.extend([
+        "setpts=PTS-STARTPTS",
         f"fps={fps}",
-        f"setpts=(PTS-STARTPTS)/{speed:.5f}+{start:.5f}/TB",
         "setsar=1",
         "format=rgba",
     ])
     fade = max(0.0, min(5.0, float(clip.get("fade_seconds", clip.get("fade", 0)) or 0)))
     transition = str(clip.get("transition") or "None").lower()
     if transition == "zoom":
-        local_t = f"max(0\\,min(1\\,(t-{trim_in:.5f})/0.5))"
+        local_t = "max(0\\,min(1\\,t/0.5))"
         filters.append(f"scale=w='iw*(0.8+0.2*{local_t})':h='ih*(0.8+0.2*{local_t})':eval=frame")
     if fade > 0 or transition in ("fade", "dissolve"):
         fade_duration = min(fade if fade > 0 else 0.5, duration / 2)
@@ -271,6 +271,7 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
             f"drawtext=fontfile={font}:text='{safe_text}':fontcolor=white:fontsize={size}:"
             f"x=(w-text_w)/2:y={y}:box=1:boxcolor=black@0.38:boxborderw=12"
         )
+    filters.append(f"setpts=PTS/{speed:.5f}+{start:.5f}/TB")
     return ",".join(filters)
 
 
