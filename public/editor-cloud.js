@@ -36,6 +36,33 @@ async function load(p){
  clips.push({id:"cloud-"+r.id,dbId:r.id,assetId:a.id,name:v.original_name||r.title,kind:v.kind||(a.asset_type==="image"?"image":a.asset_type==="audio"?"audio":"video"),url:u.data.signedUrl,file:null,mime:a.mime_type||"",track:t.name==="Editor Overlay"?"overlay":t.name==="Editor Audio"?"audio":t.name==="Editor SFX"?"sfx":t.name==="Editor Subtitles"?"subtitles":"video",start:Number(r.start_seconds)||0,trimIn:ti,trimOut:Number(v.trim_out_seconds)||ti+Number(r.duration_seconds),speed:Number(v.speed)||1,volume:Number(r.volume)||0,filter:v.filter||"none",transition:v.transition||"None",fade:Number(v.fade)||0,fit:v.fit||"contain",rotate:v.rotate||0,scale:v.scale||100,animation:v.animation||"none",text:v.text||"",textSize:v.text_size||34,textPosition:v.text_position||"top",sticker:v.sticker||"",frameRate:v.frame_rate||30,keyframes:v.keyframes||[],opacity:Number(v.opacity??1),chromaKey:v.chroma_key||"off",chromaSimilarity:v.chroma_similarity||.25,chromaBlend:v.chroma_blend||.1});}
  quiet=true;api.load(clips);setTimeout(()=>quiet=false,0);say("Cloud timeline restored · "+clips.length+" clips.");
 }
+async function loadManifest(manifest){
+ const api=window.__studioEditor,p=pid();if(!api||!p||!manifest||!Array.isArray(manifest.clips))return false;
+ try{
+  const ids=[...new Set(manifest.clips.map(c=>c.asset_id||c.assetId).filter(Boolean))];
+  const ar=ids.length?await sb.from("assets").select("*").eq("project_id",p).in("id",ids):{data:[],error:null};
+  if(ar.error)throw ar.error;
+  const assets=new Map((ar.data||[]).map(a=>[a.id,a])),clips=[];
+  for(const c of manifest.clips){
+   const assetId=c.asset_id||c.assetId,a=assets.get(assetId);if(!a)continue;
+   const signed=await sb.storage.from("studio-media").createSignedUrl(a.storage_key,3600);if(signed.error)throw signed.error;
+   clips.push({...c,id:c.id||"restore-"+assetId,assetId:a.id,file:null,url:signed.data.signedUrl,mime:a.mime_type||c.mime||"",
+    name:c.name||c.original_name||"Recovered media",kind:c.kind||(a.asset_type==="image"?"image":a.asset_type==="audio"?"audio":"video"),
+    track:c.track||"video",start:Number(c.start)||0,trimIn:Number(c.trimIn)||0,
+    trimOut:Number(c.trimOut)||Number(c.trimIn||0)+Number(c.duration_seconds||5),
+    speed:Number(c.speed)||1,volume:Number(c.volume??1),frameRate:Number(c.frameRate)||Number(manifest.canvas?.frame_rate)||30,
+    filter:c.filter||"none",transition:c.transition||"None",fade:Number(c.fade)||0,fit:c.fit||"contain",
+    rotate:Number(c.rotate)||0,scale:Number(c.scale)||100,animation:c.animation||"none",
+    text:c.text||"",textSize:Number(c.textSize)||34,textPosition:c.textPosition||"top",sticker:c.sticker||"",
+    keyframes:Array.isArray(c.keyframes)?c.keyframes:[],opacity:Number(c.opacity??1),
+    chromaKey:c.chromaKey||"off",chromaSimilarity:Number(c.chromaSimilarity)||.25,chromaBlend:Number(c.chromaBlend)||.1});
+  }
+  quiet=true;api.load(clips);if(manifest.canvas?.aspect_ratio)$("editorAspect").value=manifest.canvas.aspect_ratio;
+  if(manifest.canvas?.frame_rate)$("editorFps").value=String(manifest.canvas.frame_rate);
+  setTimeout(()=>{quiet=false;},0);say("Recovery snapshot restored · "+clips.length+" cloud media clip(s). Save the editor timeline to persist this restored version.");return true;
+ }catch(e){say("Editor recovery restore failed: "+(e.message||e));return false;}
+}
+window.__studioCloudLoadManifest=loadManifest;
 window.__studioCloudSchedule=queue;window.__studioCloudSave=save;
 async function renderMp4(){
  const button=$("editorRender");if(button)button.disabled=true;
