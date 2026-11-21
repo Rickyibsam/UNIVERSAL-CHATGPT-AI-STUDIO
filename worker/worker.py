@@ -116,7 +116,7 @@ async def load_project_context(client: httpx.AsyncClient, job: dict[str, Any]) -
     return context
 
 
-async async def upload_file_artifact(
+async def upload_file_artifact(
     client: httpx.AsyncClient,
     job: dict[str, Any],
     path: Path,
