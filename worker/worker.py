@@ -252,6 +252,9 @@ def render_filter_chain(clip: dict[str, Any], width: int, height: int, fps: int,
     ])
     fade = max(0.0, min(5.0, float(clip.get("fade_seconds", clip.get("fade", 0)) or 0)))
     transition = str(clip.get("transition") or "None").lower()
+    if transition == "zoom":
+        local_t = f"max(0\\,min(1\\,(t-{trim_in:.5f})/0.5))"
+        filters.append(f"scale=w='iw*(0.8+0.2*{local_t})':h='ih*(0.8+0.2*{local_t})':eval=frame")
     if fade > 0 or transition in ("fade", "dissolve"):
         fade_duration = min(fade if fade > 0 else 0.5, duration / 2)
         if fade_duration > 0:
@@ -346,8 +349,21 @@ async def render_timeline(client: httpx.AsyncClient, job: dict[str, Any]) -> dic
             filters.append(f"[{input_index}:v]trim=start={trim_in:.5f}:duration={source_duration:.5f},{chain}[{label}]")
             next_base = f"mixv{index}"
             end_seconds = start_seconds + display_duration
+            transition = str(clip.get("transition") or "None").lower()
+            if transition == "slide left":
+                overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,W*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
+                overlay_y = "0"
+            elif transition == "slide right":
+                overlay_x = f"if(lt(t\\,{start_seconds + 0.5:.5f})\\,-W*(1-(t-{start_seconds:.5f})/0.5)\\,0)"
+                overlay_y = "0"
+            elif transition == "zoom":
+                overlay_x = "(W-w)/2"
+                overlay_y = "(H-h)/2"
+            else:
+                overlay_x = "0"
+                overlay_y = "0"
             filters.append(
-                f"[{current_base}][{label}]overlay=x=0:y=0:eof_action=pass:shortest=0:"
+                f"[{current_base}][{label}]overlay=x='{overlay_x}':y='{overlay_y}':eof_action=pass:shortest=0:"
                 f"enable='between(t,{start_seconds:.5f},{end_seconds:.5f})'[{next_base}]"
             )
             current_base = next_base
