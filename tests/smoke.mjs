@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
@@ -13,6 +14,9 @@ const rendererSmoke = readFileSync(new URL('./renderer_smoke.py', import.meta.ur
 assert.ok(rendererSmoke.includes('4k-zoom') && rendererSmoke.includes('1080p-slide-chroma'), 'real 1080p and 4K FFmpeg render tests exist');
 const rendererApi = readFileSync(new URL('../worker/web.py', import.meta.url), 'utf8');
 const cloudEditor = readFileSync(new URL('../public/editor-cloud.js', import.meta.url), 'utf8');
+const worldEditor = readFileSync(new URL('../public/world-3d.js', import.meta.url), 'utf8');
+execFileSync(process.execPath, ['--input-type=module', '--check'], { input: worldEditor, stdio: ['pipe', 'ignore', 'pipe'] });
+const worldMigration = readFileSync(new URL('../supabase/migrations/20261121174500_world_scenes.sql', import.meta.url), 'utf8');
 new vm.Script(cloudEditor, { filename: 'editor-cloud.js' });
 const requiredIds = [
   'sourceUrl','rightsStatus','saveImportRecord','publishPlatform','buildMetadata','worldMode','addWorldObject','downloadWorldPlan','templateGrid','prompt','planBtn','writeScreenplayBtn','realAiStoryBtn','characterList',
@@ -53,6 +57,10 @@ assert.ok(worker.includes('chromakey='), 'cloud renderer must support green/blue
 assert.ok(worker.includes('keyframe_value_expression'), 'cloud renderer must apply opacity keyframes');
 assert.ok(worker.includes('upload_file_artifact') && !worker.includes('base64.b64encode(output.read_bytes())'), 'rendered MP4 must stream to Storage without base64 buffering');
 assert.ok(html.includes('editorAddKeyframe'), 'editor must expose keyframe controls');
+assert.ok(html.includes('worldCanvas') && html.includes('exportWorldGlb'), 'interactive 3D world canvas and GLB export controls exist');
+assert.ok(html.includes('Minecraft grass block') && html.includes('applyWorldTransform'), 'voxel block placement and object transform controls exist');
+assert.ok(worldEditor.includes('OrbitControls') && worldEditor.includes('GLTFExporter') && worldEditor.includes('world_scenes'), '3D editor supports orbit controls, GLB export and cloud storage');
+assert.ok(worldMigration.includes('world_scenes_select_owner') && worldMigration.includes('auth.uid()'), 'world scene data is protected by project-owner RLS');
 assert.ok(rendererApi.includes('/jobs/{job_id}/run'), 'authenticated render API must accept render jobs');
 assert.ok(rendererApi.includes('authenticated_user'), 'render API must validate Supabase user sessions');
 assert.ok(cloudEditor.includes('timeline_clips'), 'editor must persist timeline clips in Supabase');
