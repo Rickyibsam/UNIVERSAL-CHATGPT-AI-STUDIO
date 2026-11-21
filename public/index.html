@@ -512,13 +512,13 @@ function select(id){
  $e('editorTrack').value=c.track;$e('editorStart').value=c.start;$e('editorTrimIn').value=c.trimIn;$e('editorTrimOut').value=c.trimOut;
  $e('editorSpeed').value=String(c.speed);$e('editorTransition').value=c.transition;$e('editorVolume').value=c.volume;
  $e('editorFilter').value=c.filter;$e('editorFade').value=c.fade;
- const stage=$e('editorStage');stage.innerHTML='<div class="editor-overlay" id="editorTextOverlay">'+safeName(c.text||'')+'</div>';
+ const stage=$e('editorStage');stage.innerHTML='<div class="editor-overlay">'+safeName(c.text||'')+'</div>';
  if(c.kind==='video'){const v=document.createElement('video');v.src=c.url;v.controls=true;v.playsInline=true;v.style.maxWidth='100%';v.style.maxHeight='440px';v.style.aspectRatio=$e('editorAspect').value;v.style.filter=c.filter;v.playbackRate=c.speed;v.volume=c.volume;stage.prepend(v);}
  else if(c.kind==='image'){const im=document.createElement('img');im.src=c.url;im.style.aspectRatio=$e('editorAspect').value;im.style.filter=c.filter;stage.prepend(im);}
  else {stage.innerHTML='<div class="empty">Audio clip selected: '+safeName(c.name)+'. Preview it with the track controls after export.</div>';}
- $e('editorTextOverlay').style.top=c.textPosition==='bottom'?'auto':c.textPosition==='center'?'45%':'10%';
- $e('editorTextOverlay').style.bottom=c.textPosition==='bottom'?'8%':'auto';
- $e('editorTextOverlay').style.fontSize=(c.textSize||34)+'px';
+ const overlay=stage.querySelector('.editor-overlay');overlay.style.top=c.textPosition==='bottom'?'auto':c.textPosition==='center'?'45%':'10%';
+ overlay.style.bottom=c.textPosition==='bottom'?'8%':'auto';
+ overlay.style.fontSize=(c.textSize||34)+'px';
 }
 $e('editorFiles').addEventListener('change',ev=>{
  for(const file of ev.target.files){
