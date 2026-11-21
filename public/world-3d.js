@@ -80,7 +80,7 @@ else{
       node.traverse(child=>{
         if(child.isMesh&&child.material&&"emissive" in child.material){
           child.material.emissive.setHex(key===selectedId?0x244d7a:0x000000);
-          child.material.emissiveIntensity=key===selectedId?.55:0;
+          child.material.emissiveIntensity=key===selectedId?0.55:0;
         }
       });
     }
@@ -92,8 +92,8 @@ else{
     let sky=weather.includes("Night")?0x101b34:weather.includes("Sunset")?0xe99a68:weather.includes("Rain")?0x647d91:weather.includes("Snow")?0xb8c9d7:weather.includes("Fog")?0x9aa9b1:0x8bc6e7;
     scene.background=new THREE.Color(sky);
     scene.fog=new THREE.Fog(sky,35,95);
-    const hemi=new THREE.HemisphereLight(0xffffff,0x53644c,weather.includes("Night")?.55:1.5);scene.add(hemi);
-    const sun=new THREE.DirectionalLight(weather.includes("Night")?0x9db7ff:0xffedcf,weather.includes("Night")?.7:2.2);
+    const hemi=new THREE.HemisphereLight(0xffffff,0x53644c,weather.includes("Night")?0.55:1.5);scene.add(hemi);
+    const sun=new THREE.DirectionalLight(weather.includes("Night")?0x9db7ff:0xffedcf,weather.includes("Night")?0.7:2.2);
     sun.position.set(12,22,10);sun.castShadow=true;scene.add(sun);
     if(minecraft){
       const geo=new THREE.BoxGeometry(1,1,1),mat=material(palette.grass);
