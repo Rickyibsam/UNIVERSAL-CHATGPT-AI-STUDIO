@@ -223,7 +223,7 @@ $('applyPromptTemplate')?.addEventListener('click',()=>{
  if(!key||!promptTemplates[key]){alert('Choose a prompt template first.');return;}
  const box=$('prompt');
  const existing=box.value.trim();
- box.value=existing?existing+'\\n\\n'+promptTemplates[key]:promptTemplates[key];
+ box.value=existing?existing+'\n\n'+promptTemplates[key]:promptTemplates[key];
  box.dispatchEvent(new Event('input',{bubbles:true}));
  box.focus();
 });
