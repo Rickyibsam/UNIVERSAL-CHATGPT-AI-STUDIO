@@ -31,6 +31,11 @@ else{
     if(type.includes("minecraft grass block"))addPart(g,box(1,1,1,palette.grass),0,.5,0);
     else if(type.includes("minecraft stone block"))addPart(g,box(1,1,1,palette.stone),0,.5,0);
     else if(type.includes("minecraft wood block"))addPart(g,box(1,1,1,palette.wood),0,.5,0);
+    else if(type.includes("minecraft custom block")){
+      const state=String(item.blockState||"").toLowerCase();
+      const color=state.includes("grass")?palette.grass:state.includes("oak")||state.includes("plank")?palette.wood:state.includes("glass")?0x8ed8e8:state.includes("wool")?palette.roof:state.includes("dirt")?0x79583c:palette.stone;
+      addPart(g,box(1,1,1,color),0,.5,0);
+    }
     else if(type.includes("minecraft house"))voxelHouse(g);
     else if(type.includes("minecraft mob")){
       addPart(g,box(1.3,1.3,.9,0x58a66b),0,1.15,0);
