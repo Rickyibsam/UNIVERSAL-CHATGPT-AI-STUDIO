@@ -56,23 +56,12 @@ The separate polling worker and self-hosted inference engine are not deployed. T
 The static frontend is not a GPU inference service. A separate FFmpeg render web service is deployed on Render's free tier, but free hosting does not provide GPU inference capacity and may impose memory/sleep limits on long or 4K jobs. The self-hosted AI inference engine and its model adapters are not deployed. The project must not start paid compute without explicit approval.
 
 
-### YouTube automation module
-- [x] Dedicated YouTube automation schema with owner-scoped RLS and server-only OAuth credential storage.
-- [x] YouTube Automation dashboard for channel connection and daily Kids Learning + 3D Animation settings.
-- [x] Supabase `youtube-automation` Edge Function deployed for OAuth initiation/callback, channel listing, settings persistence and disconnect.
-- [ ] Google OAuth client secrets must be configured by the owner before channel connection can complete.
-- [ ] Durable daily content scheduler, YouTube resumable upload worker and analytics synchronization are not yet deployed.
-- [ ] Full daily unattended video production remains blocked until the owner-operated licensed GPU inference engine and model adapters are deployed and tested.
-- Setup guide: [docs/YOUTUBE_AUTOMATION_SETUP.md](./docs/YOUTUBE_AUTOMATION_SETUP.md).
-
-## Deployment
-- GitHub: https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO
-- Branch: `main`
-- Frontend: https://universal-chatgpt-ai-studio.onrender.com
-- Supabase Edge Function: `studio-gateway`
-
-
-### Frame-accurate editor updates
-- Timeline frame rate can be selected at 24/25/30/50/60 fps; clip start/trim/split and keyframe positions snap to the selected frame grid.
-- Opacity and scale keyframes are carried to the cloud renderer. Render clip start, trim and durations are quantized to the selected frame rate.
-- The free Render web renderer accepts a render job only after authenticated project ownership and asset ownership checks.
+### Daily video production (manual upload)
+- [x] Removed YouTube OAuth/channel connection and auto-publishing controls from the user workflow.
+- [x] Added a private project-scoped video generation queue using the existing `generation_jobs` and `assets` tables.
+- [x] Added generation history, retry, signed asset downloads and a JSON metadata package for manual upload.
+- [x] Added more than 100 learning/story starter templates in the template library.
+- [ ] Daily unattended scheduler is not deployed; daily preferences are browser-local only.
+- [ ] The Wan2.1 ZeroGPU worker requires `HF_T2V_SPACE_ID` and available ZeroGPU capacity, or an owner-operated `STUDIO_ENGINE_URL`. These are not currently verified as configured.
+- [ ] Full multi-scene long-form assembly, generated speech, music, sound effects, lip-sync and final 1080p/4K production are not complete until model adapters and a full authenticated end-to-end test are deployed.
+- No YouTube upload API, OAuth credentials or publishing worker are required. The owner downloads the output and uploads it manually.
