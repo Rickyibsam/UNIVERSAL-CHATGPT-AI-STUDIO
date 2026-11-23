@@ -55,6 +55,16 @@ The separate polling worker and self-hosted inference engine are not deployed. T
 ## Important limits
 The static frontend is not a GPU inference service. A separate FFmpeg render web service is deployed on Render's free tier, but free hosting does not provide GPU inference capacity and may impose memory/sleep limits on long or 4K jobs. The self-hosted AI inference engine and its model adapters are not deployed. The project must not start paid compute without explicit approval.
 
+
+### YouTube automation module
+- [x] Dedicated YouTube automation schema with owner-scoped RLS and server-only OAuth credential storage.
+- [x] YouTube Automation dashboard for channel connection and daily Kids Learning + 3D Animation settings.
+- [x] Supabase `youtube-automation` Edge Function deployed for OAuth initiation/callback, channel listing, settings persistence and disconnect.
+- [ ] Google OAuth client secrets must be configured by the owner before channel connection can complete.
+- [ ] Durable daily content scheduler, YouTube resumable upload worker and analytics synchronization are not yet deployed.
+- [ ] Full daily unattended video production remains blocked until the owner-operated licensed GPU inference engine and model adapters are deployed and tested.
+- Setup guide: [docs/YOUTUBE_AUTOMATION_SETUP.md](./docs/YOUTUBE_AUTOMATION_SETUP.md).
+
 ## Deployment
 - GitHub: https://github.com/Rickyibsam/UNIVERSAL-CHATGPT-AI-STUDIO
 - Branch: `main`
