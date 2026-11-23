@@ -1,50 +1,24 @@
-# YouTube Automation Setup
+# Daily Video Production (Manual YouTube Upload)
 
-This module adds a channel connection and daily publishing settings to Universal ChatGPT AI Studio.
+The Studio does not connect to YouTube and does not upload or publish videos. The user downloads generated files and manually uploads them.
 
-## What is deployed
+## Current workflow
+1. Sign in and create/save a cloud production.
+2. Open **Daily Video Production**.
+3. Enter a prompt or select one of the learning/story templates.
+4. Queue a video generation job. It is stored in the existing project-scoped `generation_jobs` queue.
+5. Follow status in Generation History. Failed jobs can be retried.
+6. Download generated assets from private Supabase Storage using short-lived signed URLs.
+7. Prepare and download the JSON metadata package (title, description, tags, format and disclosure reminder).
+8. Upload manually on YouTube.
 
-- Dedicated Supabase tables for channel metadata, private OAuth credentials, OAuth state, automation settings, publish jobs and analytics snapshots.
-- RLS policies and least-privilege grants. OAuth credentials and OAuth state are server-only; authenticated browser users cannot read them.
-- Supabase Edge Function `youtube-automation` for Google OAuth initiation/callback, channel listing, settings save and disconnect.
-- Dashboard section at `#youtubeAutomation` for channel connection and daily settings.
-- Defaults: one video/day, Asia/Karachi, Kids Learning + 3D Animation, private visibility, quality check required, auto-publish off until explicitly enabled.
+## Runtime requirements and honest limitations
+- The worker supports Wan2.1 T2V 1.3B through Hugging Face Spaces ZeroGPU only when `HF_T2V_SPACE_ID` is configured on the worker and the Space is available. This path produces a short 832×480, 15 FPS clip (about 5.4 seconds), not a complete long-form video.
+- Alternatively, `STUDIO_ENGINE_URL` must point to an owner-operated inference engine with installed, licensed model adapters.
+- The engine registry currently has no default adapters. Do not mark a generation complete unless the worker returns a real artifact and it is stored and verified.
+- Daily target/time preferences are saved in the current browser only. No unattended daily scheduler is deployed.
+- Long-form scene generation, consistent character references, generated speech, music/SFX, lip-sync, thumbnail generation, complete final MP4 assembly and 1080p/4K quality verification are not yet verified end-to-end.
+- The existing FFmpeg renderer can assemble project-owned timeline assets, but it does not create AI source media by itself.
 
-## Required Google Cloud configuration
-
-Create a Google Cloud project and configure OAuth consent. Create an OAuth 2.0 Web application client.
-
-Authorized redirect URI must be exactly:
-
-```
-https://xoitqhckliiuomreutmk.supabase.co/functions/v1/youtube-automation?action=callback
-```
-
-Enable YouTube Data API v3 and, for analytics, YouTube Analytics API. Request these scopes through the OAuth flow:
-
-- `https://www.googleapis.com/auth/youtube.upload`
-- `https://www.googleapis.com/auth/youtube.readonly`
-- `https://www.googleapis.com/auth/yt-analytics.readonly`
-
-Set these Supabase Edge Function secrets in the Supabase Dashboard (Project Settings → Edge Functions → Secrets):
-
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `YOUTUBE_OAUTH_REDIRECT_URI` (the exact redirect URI above)
-
-Never commit these secrets, put them in browser JavaScript, or send them in chat.
-
-## Runtime blockers before automatic daily publishing
-
-The current project README and self-hosted engine contract intentionally prohibit third-party hosted generation APIs and paid GPU compute without owner approval. The private inference engine and polling worker are not deployed, and the model registry currently has no active generation adapters. The current free Render renderer is an FFmpeg renderer, not a GPU inference host.
-
-Before enabling true unattended daily video production, the owner-operated licensed GPU inference engine, durable scheduler/publisher worker, and YouTube upload worker must be deployed and tested. Do not enable auto-publish until an actual generated MP4, audio mix, metadata and channel upload have passed end-to-end verification.
-
-For content designated Made for Kids, set the audience flag accurately for each video. Do not infer it only from the channel or from the automation category. Set synthetic/altered-content disclosures accurately when applicable.
-
-## Current module limitations
-
-- OAuth cannot complete until the Google OAuth secrets are configured and the redirect URI is allowlisted in Google Cloud.
-- Daily schedule settings are persisted, but a production scheduler is not yet running.
-- Publish-job and analytics tables are prepared, but automatic uploads and analytics synchronization are not yet wired into the background worker.
-- No video-generation success is reported until a real owner-operated model returns a verified artifact.
+## Legacy YouTube tables/function
+Older database tables and the `youtube-automation` Edge Function may remain from an earlier experiment. The new UI does not call them. They are not needed for manual video generation or download. They are intentionally not dropped to avoid destructive changes to existing project data.
