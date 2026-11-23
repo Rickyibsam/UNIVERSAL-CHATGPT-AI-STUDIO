@@ -14,7 +14,8 @@
     ["Nursery Rhymes",["Twinkle Star Adventure","Old MacDonald Farm","Wheels on the Bus","Rain Rain Go Away","Five Little Ducks","Itsy Bitsy Spider","Humpty Dumpty","Baa Baa Black Sheep","Row Row Your Boat","If You Are Happy"]],
     ["3D Cartoon Stories",["Friendly Robot","Lost Baby Dinosaur","Magic Toy Train","Jungle Friends","Underwater Rescue","Space Explorer","Talking Animals","Little Superhero","Enchanted Forest","Kindness Story"]],
     ["Science & Nature",["Solar System","Water Cycle","Plant Life Cycle","Ocean Animals","Weather for Kids","Dinosaur Discovery","Human Body Basics","Butterfly Metamorphosis","Save the Earth","Volcanoes Explained"]],
-    ["Learning & Life Skills",["Good Manners","Brush Your Teeth","Healthy Food","Road Safety","Sharing is Caring","Clean Your Room","First Day at School","Helping Parents","Friendship","Emotions for Kids"]]
+    ["Learning & Life Skills",["Good Manners","Brush Your Teeth","Healthy Food","Road Safety","Sharing is Caring","Clean Your Room","First Day at School","Helping Parents","Friendship","Emotions for Kids"]],
+    ["Creative Learning",["Alphabet Animals","Phonics Sound Hunt","Letter Matching Game","Find the Missing Letter","Number Train","Counting Dinosaurs","Shape Detective","Color Mixing Lab","Build a Rainbow","Pattern Puzzle","Farm Animal Sounds","Baby Animal Names","Wildlife Rescue","Ocean Explorer","Space Planet Tour","Rocket Launch Science","Little Chef Recipe","Fruit Salad Lesson","Vegetable Garden","Recycling Heroes","Traffic Light Lesson","Community Helpers","Musical Instruments","Feelings and Faces","Bedtime Calm Story","Magic Word Adventure","Treasure Map Directions","Opposite Day Challenge","Healthy Habits Song","Kindness Superhero"]]
   ];
   const allTemplates = templateGroups.flatMap(([group,items])=>items.map((name)=>({group,name})));
   function addTemplateCards(){
