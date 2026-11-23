@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: 22
       - run: node tests/smoke.mjs
+      - run: node --check public/video-production.js
 
   python-syntax:
     runs-on: ubuntu-latest
