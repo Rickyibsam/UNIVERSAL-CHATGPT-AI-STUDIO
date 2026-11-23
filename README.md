@@ -60,7 +60,7 @@ The static frontend is not a GPU inference service. A separate FFmpeg render web
 - [x] Removed YouTube OAuth/channel connection and auto-publishing controls from the user workflow.
 - [x] Added a private project-scoped video generation queue using the existing `generation_jobs` and `assets` tables.
 - [x] Added generation history, retry, signed asset downloads and a JSON metadata package for manual upload.
-- [x] Added more than 100 learning/story starter templates in the template library.
+- [x] Added 106 learning/story starter templates in the template library.
 - [ ] Daily unattended scheduler is not deployed; daily preferences are browser-local only.
 - [ ] The Wan2.1 ZeroGPU worker requires `HF_T2V_SPACE_ID` and available ZeroGPU capacity, or an owner-operated `STUDIO_ENGINE_URL`. These are not currently verified as configured.
 - [ ] Full multi-scene long-form assembly, generated speech, music, sound effects, lip-sync and final 1080p/4K production are not complete until model adapters and a full authenticated end-to-end test are deployed.
